@@ -47,14 +47,14 @@ const char index_html[] = R"rawhtml(
         }
 
         .dashboard {
-            width: 100%;
-            max-width: 950px;
+            width: 95%;
+            max-width: 1350px;
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-color);
             border-radius: 24px;
-            padding: 40px;
+            padding: 30px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -69,8 +69,8 @@ const char index_html[] = R"rawhtml(
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 25px;
-            margin-bottom: 30px;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .brand h1 {
@@ -111,9 +111,15 @@ const char index_html[] = R"rawhtml(
 
         .grid {
             display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            grid-template-columns: 1.15fr 0.9fr 0.95fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
         }
 
         @media (max-width: 768px) {
@@ -572,7 +578,7 @@ const char index_html[] = R"rawhtml(
     </header>
 
     <div class="grid">
-        <!-- Left Column: Status, Telemetry & Settings -->
+        <!-- Column 1: Update Control -->
         <div>
             <div class="panel">
                 <div class="panel-title">Update Status & Telemetry</div>
@@ -619,8 +625,20 @@ const char index_html[] = R"rawhtml(
             <div class="panel">
                 <div class="panel-title">Firmware Configuration</div>
                 <div class="input-group">
-                    <label for="fwUrlInput">Firmware HTTP URL Link</label>
-                    <input type="text" id="fwUrlInput" class="text-input" placeholder="http://64.251.10.159/otafw.b64" value="http://64.251.10.159/otafw.b64">
+                    <label for="fwUrlInput1">Part 1 URL</label>
+                    <input type="text" id="fwUrlInput1" class="text-input" placeholder="http://64.251.10.159/otafw_part1.b64" value="http://64.251.10.159/otafw_part1.b64">
+                </div>
+                <div class="input-group">
+                    <label for="fwUrlInput2">Part 2 URL</label>
+                    <input type="text" id="fwUrlInput2" class="text-input" placeholder="http://64.251.10.159/otafw_part2.b64" value="http://64.251.10.159/otafw_part2.b64">
+                </div>
+                <div class="input-group">
+                    <label for="fwUrlInput3">Part 3 URL</label>
+                    <input type="text" id="fwUrlInput3" class="text-input" placeholder="http://64.251.10.159/otafw_part3.b64" value="http://64.251.10.159/otafw_part3.b64">
+                </div>
+                <div class="input-group">
+                    <label for="fwUrlInput4">Part 4 URL</label>
+                    <input type="text" id="fwUrlInput4" class="text-input" placeholder="http://64.251.10.159/otafw_part4.b64" value="http://64.251.10.159/otafw_part4.b64">
                 </div>
                 <button id="btnTrigger" class="btn-trigger" onclick="triggerOTA()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -629,7 +647,7 @@ const char index_html[] = R"rawhtml(
             </div>
         </div>
 
-        <!-- Right Column: Modbus Bindings & Action Diagnostics -->
+        <!-- Column 2: Modbus Telemetry & Overrides -->
         <div>
             <div class="panel">
                 <div class="panel-title">Modbus Register Bindings</div>
@@ -693,6 +711,68 @@ const char index_html[] = R"rawhtml(
                 </div>
             </div>
         </div>
+
+        <!-- Column 3: Storage details & Modem UFS files -->
+        <div>
+            <div class="panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div class="panel-title" style="margin-bottom: 0;">Modem Storage (UFS)</div>
+                    <button class="console-btn-clear" onclick="loadModemFiles()" style="font-weight: 600; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        Sync
+                    </button>
+                </div>
+                <div style="overflow-x: auto; max-height: 230px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                <th style="padding: 8px 4px; font-weight: 600;">File Path</th>
+                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Size (Bytes)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modemFilesBody">
+                            <tr>
+                                <td colspan="2" style="padding: 12px 4px; color: var(--text-secondary); text-align: center;">No files synced.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">ESP32 System Storage</div>
+                
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: var(--text-secondary);">FLASH MEMORY</span>
+                        <span id="flashStatVal" style="font-family: 'Fira Code'; font-weight: 600;">4.00 MB / 4.00 MB</span>
+                    </div>
+                    <div class="progress-track" style="height: 8px; margin-bottom: 0;">
+                        <div id="flashBar" class="progress-bar" style="width: 100%; background: linear-gradient(90deg, #10b981, #3b82f6);"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: var(--text-secondary);">FREE HEAP SPACE</span>
+                        <span id="heapStatVal" style="font-family: 'Fira Code'; font-weight: 600;">285.4 KB</span>
+                    </div>
+                    <div class="progress-track" style="height: 8px; margin-bottom: 0;">
+                        <div id="heapBar" class="progress-bar" style="width: 75%; background: linear-gradient(90deg, #a855f7, #6366f1);"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: var(--text-secondary);">PSRAM TELEMETRY</span>
+                        <span id="psramStatVal" style="font-family: 'Fira Code'; font-weight: 600;">4.00 MB / 4.00 MB</span>
+                    </div>
+                    <div class="progress-track" style="height: 8px; margin-bottom: 0;">
+                        <div id="psramBar" class="progress-bar" style="width: 100%; background: linear-gradient(90deg, #f59e0b, #e11d48);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Live Serial/UART Console Panel -->
@@ -732,6 +812,7 @@ const char index_html[] = R"rawhtml(
 
     let logOffset = 0;
     let isPolling = false;
+    let pollCount = 0;
 
     function formatTime() {
         const d = new Date();
@@ -843,6 +924,13 @@ const char index_html[] = R"rawhtml(
                 logOffset += data.logs.length;
             }
 
+            // 8. Poll storage parameters periodically
+            pollCount++;
+            if (pollCount % 6 === 1) {
+                loadModemFiles();
+                loadEsp32Storage();
+            }
+
         } catch (e) {
             console.error('Polling failed:', e);
         } finally {
@@ -850,16 +938,78 @@ const char index_html[] = R"rawhtml(
         }
     }
 
+    async function loadModemFiles() {
+        try {
+            const res = await fetch('/api/list_modem_files');
+            if (!res.ok) throw new Error('Failed to retrieve file list');
+            const data = await res.json();
+            const tbody = document.getElementById('modemFilesBody');
+            if (data.files && data.files.length > 0) {
+                tbody.innerHTML = '';
+                data.files.forEach(f => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+                    tr.innerHTML = `
+                        <td style="padding: 10px 4px; font-family:'Fira Code', monospace; color:#38bdf8;">${f.name}</td>
+                        <td style="padding: 10px 4px; text-align: right; font-family:'Fira Code', monospace; color:var(--text-primary); font-weight:600;">${f.size.toLocaleString()}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="2" style="padding: 12px 4px; color: var(--text-secondary); text-align: center;">No files found.</td></tr>`;
+            }
+        } catch (e) {
+            console.error('Error listing files:', e);
+        }
+    }
+
+    async function loadEsp32Storage() {
+        try {
+            const res = await fetch('/api/list_esp32_storage');
+            if (!res.ok) throw new Error('Failed to retrieve system specs');
+            const data = await res.json();
+            
+            // Render flash storage
+            const flashTotalMB = (data.flash_total / (1024 * 1024)).toFixed(2);
+            const flashFreeMB = (data.flash_free / (1024 * 1024)).toFixed(2);
+            document.getElementById('flashStatVal').innerText = `${flashFreeMB} MB / ${flashTotalMB} MB`;
+            const flashPct = Math.min(100, Math.round((data.flash_free / data.flash_total) * 100));
+            document.getElementById('flashBar').style.width = `${flashPct}%`;
+            
+            // Render heap
+            const heapKB = (data.heap_free / 1024).toFixed(1);
+            document.getElementById('heapStatVal').innerText = `${heapKB} KB`;
+            const heapPct = Math.min(100, Math.round((data.heap_free / 300000) * 100));
+            document.getElementById('heapBar').style.width = `${heapPct}%`;
+            
+            // Render PSRAM
+            if (data.psram_total > 0) {
+                const psramMB = (data.psram_total / (1024 * 1024)).toFixed(2);
+                document.getElementById('psramStatVal').innerText = `${psramMB} MB / ${psramMB} MB`;
+                document.getElementById('psramBar').style.width = '100%';
+            } else {
+                document.getElementById('psramStatVal').innerText = 'Not Equipped';
+                document.getElementById('psramBar').style.width = '0%';
+            }
+        } catch (e) {
+            console.error('Error fetching storage details:', e);
+        }
+    }
+
     async function triggerOTA() {
         const btn = document.getElementById('btnTrigger');
-        const urlInput = document.getElementById('fwUrlInput').value;
+        const url1 = document.getElementById('fwUrlInput1').value;
+        const url2 = document.getElementById('fwUrlInput2').value;
+        const url3 = document.getElementById('fwUrlInput3').value;
+        const url4 = document.getElementById('fwUrlInput4').value;
         btn.setAttribute('disabled', 'true');
         clearConsole();
         logOffset = 0;
-        appendLog(null, 'system', 'triggering', 0, 0, 0, `User triggered OTA sequence for URL: ${urlInput}`, 'info');
+        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence with 4 URLs.', 'info');
         
         try {
-            const res = await fetch(`/api/trigger?url=${encodeURIComponent(urlInput)}`, { method: 'POST' });
+            const query = `url1=${encodeURIComponent(url1)}&url2=${encodeURIComponent(url2)}&url3=${encodeURIComponent(url3)}&url4=${encodeURIComponent(url4)}`;
+            const res = await fetch(`/api/trigger?${query}`, { method: 'POST' });
             if (!res.ok) throw new Error('API server rejected trigger request');
             appendLog(null, 'system', 'triggered', 0, 0, 0, 'OTA update process successfully spawned in background.', 'info');
         } catch (e) {
@@ -884,10 +1034,10 @@ const char index_html[] = R"rawhtml(
     }
 
     async function pingServer() {
-        const urlInput = document.getElementById('fwUrlInput').value;
-        appendLog(null, 'ping_diag', 'checking', 0, 0, 0, `Checking host resolution and pinging server: ${urlInput}...`, 'info');
+        const url1 = document.getElementById('fwUrlInput1').value;
+        appendLog(null, 'ping_diag', 'checking', 0, 0, 0, `Checking host resolution and pinging server: ${url1}...`, 'info');
         try {
-            const res = await fetch(`/api/ping_server?url=${encodeURIComponent(urlInput)}`, { method: 'POST' });
+            const res = await fetch(`/api/ping_server?url=${encodeURIComponent(url1)}`, { method: 'POST' });
             const data = await res.json();
             if (data.success) {
                 appendLog(null, 'ping_diag', 'idle', 0, 0, 0, 'Ping transaction complete. Target server responded.', 'info');
@@ -906,6 +1056,7 @@ const char index_html[] = R"rawhtml(
             appendLog(null, 'cleanup', 'idle', 0, 0, 0, 'Modem storage cache cleared.', 'info');
             logOffset = 0;
             clearConsole();
+            loadModemFiles();
         } catch (e) {
             appendLog(null, 'cleanup', 'error', 0, 0, 0, 'Cache cleanup command failed: ' + e.message, 'error');
         }

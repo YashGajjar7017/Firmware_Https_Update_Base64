@@ -67,7 +67,12 @@ static int s_log_count = 0;
 
 // Dynamic simulation parameters
 static const char* s_parts_payloads[FW_UPDATE_NUM_PARTS];
-static String s_custom_url = "";
+static String s_custom_urls[4] = {
+    "http://64.251.10.159/otafw_part1.b64",
+    "http://64.251.10.159/otafw_part2.b64",
+    "http://64.251.10.159/otafw_part3.b64",
+    "http://64.251.10.159/otafw_part4.b64"
+};
 static std::string s_parts_data[FW_UPDATE_NUM_PARTS]; // Persist downloaded parts in simulation
 
 // Logging helper function
@@ -473,38 +478,14 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
     module->sendCommand("AT+QFLST\r\n", "OK", 1000, 1);
 
     if (x >= 1 && x <= FW_UPDATE_NUM_PARTS) {
-        std::string parsed_url = url.c_str();
-        size_t part_pos = parsed_url.find("_part");
-        if (part_pos != std::string::npos && part_pos + 5 < parsed_url.length()) {
-            size_t digit_pos = part_pos + 5;
-            size_t digit_len = 0;
-            while (digit_pos + digit_len < parsed_url.length() && 
-                   parsed_url[digit_pos + digit_len] >= '0' && 
-                   parsed_url[digit_pos + digit_len] <= '9') {
-                digit_len++;
-            }
-            if (digit_len > 0) {
-                parsed_url.replace(digit_pos, digit_len, std::to_string(x));
-            } else {
-                parsed_url.insert(digit_pos, std::to_string(x));
-            }
-        } else {
-            size_t b64_pos = parsed_url.rfind(".b64");
-            if (b64_pos != std::string::npos && b64_pos == parsed_url.length() - 4) {
-                parsed_url.insert(b64_pos, "_part" + std::to_string(x));
-            } else {
-                parsed_url += "_part" + std::to_string(x) + ".b64";
-            }
-        }
-
         char url_command1[512];
-        snprintf(url_command1, sizeof(url_command1), "%s", parsed_url.c_str());
+        snprintf(url_command1, sizeof(url_command1), "%s", url.c_str());
 
         #ifndef ESP_PLATFORM
         // Simulate/real HTTP download on host PC
         Sleep(80);
         std::string downloaded = "";
-        if (s_custom_url.length() > 0) {
+        if (url.length() > 0) {
             downloaded = download_http_winsock(url_command1);
         }
         
@@ -514,18 +495,18 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         } else {
             // Keep existing payload if download is empty / fails
             if (s_parts_data[x - 1].empty()) {
-                // If it is empty, we must keep whatever mock payload was in s_parts_payloads.
+                // Keep default
             } else {
                 s_parts_payloads[x - 1] = s_parts_data[x - 1].c_str();
             }
         }
         
-        char log_req[256];
+        char log_req[512];
         snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
         add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
         
-        char log_done[128];
-        snprintf(log_done, sizeof(log_done), "Part %d downloaded successfully to UFS", x);
+        char log_done[512];
+        snprintf(log_done, sizeof(log_done), "ACK: Part %d downloaded successfully from URL: %s", x, url_command1);
         add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
         return 0;
         #else
@@ -533,7 +514,7 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         char url_command12[64];
         snprintf(url_command12, sizeof(url_command12), "AT+QHTTPURL=%d,160\r\n", urlLen);
 
-        char log_req[256];
+        char log_req[512];
         snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
         add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
 
@@ -552,8 +533,8 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
             return 6;
         }
         
-        char log_done[128];
-        snprintf(log_done, sizeof(log_done), "Part %d downloaded successfully to UFS", x);
+        char log_done[512];
+        snprintf(log_done, sizeof(log_done), "ACK: Part %d downloaded successfully from URL: %s", x, url_command1);
         add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
 
         module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
@@ -810,13 +791,15 @@ static uint8_t trigger_firmware_update_flow() {
     finalsize = 0;
     spiffs_offset = 0;
     
-    String fw_url = s_custom_url;
-    if (fw_url.length() == 0) {
-        fw_url = "http://64.251.10.159/otafw.b64";
-    }
-    
     for (int part = 1; part <= getFloatValue(FW_TOTAL_PARTS); part++) {
         modbus_set_current_part(part);
+        
+        String fw_url = s_custom_urls[part - 1];
+        if (fw_url.length() == 0) {
+            char fallback_url[128];
+            snprintf(fallback_url, sizeof(fallback_url), "http://64.251.10.159/otafw_part%d.b64", part);
+            fw_url = fallback_url;
+        }
         
         // Fetch part via HTTP/HTTPS AT command flow
         int k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
@@ -945,10 +928,16 @@ static void ota_background_task(void* pvParameters) {
 
 static void handle_trigger() {
     s_log_count = 0;
-    if (server.hasArg("url")) {
-        s_custom_url = server.arg("url");
-    } else {
-        s_custom_url = "";
+    for (int i = 0; i < 4; i++) {
+        char arg_name[8];
+        snprintf(arg_name, sizeof(arg_name), "url%d", i + 1);
+        if (server.hasArg(arg_name)) {
+            s_custom_urls[i] = server.arg(arg_name);
+        } else {
+            char fallback_url[128];
+            snprintf(fallback_url, sizeof(fallback_url), "http://64.251.10.159/otafw_part%d.b64", i + 1);
+            s_custom_urls[i] = fallback_url;
+        }
     }
     xTaskCreate(ota_background_task, "ota_task", 8192, NULL, 5, NULL);
     server.send(200, "application/json", "{\"status\":\"triggered\"}");
@@ -1049,6 +1038,91 @@ static void handle_write_register() {
     }
 }
 
+static void handle_list_modem_files() {
+    #ifdef ESP_PLATFORM
+    while (Serial1.available()) Serial1.read();
+    Serial1.print("AT+QFLST=\"UFS:*\"\r\n");
+    uint32_t start = millis();
+    int idx = 0;
+    char list_buf[2048] = {0};
+    while (millis() - start < 1500) {
+        while (Serial1.available()) {
+            char c = Serial1.read();
+            if (idx < (int)sizeof(list_buf) - 1) {
+                list_buf[idx++] = c;
+            }
+        }
+        if (strstr(list_buf, "OK") != NULL || strstr(list_buf, "ERROR") != NULL) {
+            break;
+        }
+        delay(10);
+    }
+    
+    String json = "{\n  \"files\": [\n";
+    char* line = strtok(list_buf, "\r\n");
+    bool first = true;
+    while (line != NULL) {
+        if (strstr(line, "+QFLST:") != NULL) {
+            char* name_start = strchr(line, '"');
+            if (name_start != NULL) {
+                char* name_end = strchr(name_start + 1, '"');
+                if (name_end != NULL) {
+                    *name_end = '\0';
+                    String fname = String(name_start + 1);
+                    char* size_ptr = strchr(name_end + 1, ',');
+                    long fsize = 0;
+                    if (size_ptr != NULL) {
+                        fsize = atol(size_ptr + 1);
+                    }
+                    if (!first) json += ",\n";
+                    json += "    {\"name\": \"" + fname + "\", \"size\": " + String(fsize) + "}";
+                    first = false;
+                }
+            }
+        }
+        line = strtok(NULL, "\r\n");
+    }
+    json += "\n  ]\n}";
+    server.send(200, "application/json", json);
+    #else
+    String json = "{\n  \"files\": [\n"
+                  "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
+                  "  ]\n"
+                  "}";
+    server.send(200, "application/json", json);
+    #endif
+}
+
+static void handle_esp32_storage() {
+    #ifdef ESP_PLATFORM
+    uint32_t flash_size = ESP.getFlashChipSize();
+    uint32_t free_heap = ESP.getFreeHeap();
+    uint32_t psram_size = 0;
+    #if CONFIG_SPIRAM_SUPPORT
+    psram_size = ESP.getPsramSize();
+    #endif
+    
+    String json = "{\n";
+    json += "  \"flash_total\": " + String(flash_size) + ",\n";
+    json += "  \"flash_free\": " + String(flash_size / 2) + ",\n";
+    json += "  \"heap_free\": " + String(free_heap) + ",\n";
+    json += "  \"psram_total\": " + String(psram_size) + "\n";
+    json += "}";
+    server.send(200, "application/json", json);
+    #else
+    String json = "{\n"
+                  "  \"flash_total\": 4194304,\n"
+                  "  \"flash_free\": 2097152,\n"
+                  "  \"heap_free\": 285430,\n"
+                  "  \"psram_total\": 4194304\n"
+                  "}";
+    server.send(200, "application/json", json);
+    #endif
+}
+
 #ifndef MODEM_RX_PIN
 #define MODEM_RX_PIN 1
 #endif
@@ -1113,6 +1187,8 @@ void setup() {
     server.on("/api/clear_cache", HTTP_POST, handle_clear_cache);
     server.on("/api/reboot", HTTP_POST, handle_reboot);
     server.on("/api/write_register", HTTP_POST, handle_write_register);
+    server.on("/api/list_modem_files", HTTP_GET, handle_list_modem_files);
+    server.on("/api/list_esp32_storage", HTTP_GET, handle_esp32_storage);
     server.begin();
     
     Serial.println("HTTP Server started on Port 80");
@@ -1201,7 +1277,7 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
     sockaddr_in address;
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(8080);
+    address.sin_port = htons(80);
     
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
         closesocket(server_fd);
@@ -1217,7 +1293,7 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
     
     printf("=========================================================================\n");
     printf("     ESP32 REST WEB GUI Server successfully running on host PC           \n");
-    printf("     Open URL in browser: http://localhost:8080                          \n");
+    printf("     Open URL in browser: http://192.168.4.1 (or http://localhost)       \n");
     printf("=========================================================================\n\n");
     
     while (true) {
@@ -1288,36 +1364,31 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                      << "Connection: close\r\n\r\n"
                      << body;
         } else if (path.rfind("/api/trigger", 0) == 0 && method == "POST") {
-            size_t url_pos = path.find("?url=");
-            if (url_pos != std::string::npos) {
-                std::string raw_url = path.substr(url_pos + 5);
-                std::string decoded = "";
-                for (size_t i = 0; i < raw_url.length(); i++) {
-                    if (raw_url[i] == '%' && i + 2 < raw_url.length()) {
-                        int hex = std::stoi(raw_url.substr(i + 1, 2), nullptr, 16);
-                        decoded += (char)hex;
-                        i += 2;
-                    } else if (raw_url[i] == '+') {
-                        decoded += ' ';
-                    } else {
-                        decoded += raw_url[i];
-                    }
-                }
-                s_custom_url = decoded.c_str();
-            } else {
-                size_t body_pos = request.find("\r\n\r\n");
-                if (body_pos != std::string::npos) {
-                    std::string body = request.substr(body_pos + 4);
-                    size_t key_pos = body.find("\"url\"");
-                    if (key_pos != std::string::npos) {
-                        size_t sq = body.find("\"", key_pos + 5);
-                        if (sq != std::string::npos) {
-                            size_t eq = body.find("\"", sq + 1);
-                            if (eq != std::string::npos) {
-                                s_custom_url = body.substr(sq + 1, eq - sq - 1).c_str();
-                            }
+            for (int k = 0; k < 4; k++) {
+                char param_key[16];
+                snprintf(param_key, sizeof(param_key), "url%d=", k + 1);
+                size_t p_pos = path.find(param_key);
+                if (p_pos != std::string::npos) {
+                    size_t start_val = p_pos + strlen(param_key);
+                    size_t end_val = path.find("&", start_val);
+                    std::string raw_url = (end_val == std::string::npos) ? path.substr(start_val) : path.substr(start_val, end_val - start_val);
+                    std::string decoded = "";
+                    for (size_t i = 0; i < raw_url.length(); i++) {
+                        if (raw_url[i] == '%' && i + 2 < raw_url.length()) {
+                            int hex = std::stoi(raw_url.substr(i + 1, 2), nullptr, 16);
+                            decoded += (char)hex;
+                            i += 2;
+                        } else if (raw_url[i] == '+') {
+                            decoded += ' ';
+                        } else {
+                            decoded += raw_url[i];
                         }
                     }
+                    s_custom_urls[k] = decoded.c_str();
+                } else {
+                    char fallback[128];
+                    snprintf(fallback, sizeof(fallback), "http://64.251.10.159/otafw_part%d.b64", k + 1);
+                    s_custom_urls[k] = fallback;
                 }
             }
             trigger_ota_update_thread();
@@ -1394,6 +1465,31 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                 add_log("modbus_write", "idle", 0, 0, 0, details);
             }
             std::string body = "{\"status\":\"written\"}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path == "/api/list_modem_files" && method == "GET") {
+            std::string body = "{\n  \"files\": [\n"
+                               "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
+                               "  ]\n"
+                               "}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path == "/api/list_esp32_storage" && method == "GET") {
+            std::string body = "{\n"
+                               "  \"flash_total\": 4194304,\n"
+                               "  \"flash_free\": 2097152,\n"
+                               "  \"heap_free\": 285430,\n"
+                               "  \"psram_total\": 4194304\n"
+                               "}";
             response << "HTTP/1.1 200 OK\r\n"
                      << "Content-Type: application/json\r\n"
                      << "Content-Length: " << body.length() << "\r\n"
