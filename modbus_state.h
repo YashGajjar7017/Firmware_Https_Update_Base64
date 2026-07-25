@@ -9,11 +9,17 @@ extern "C" {
 
 // Modbus Register Map
 typedef enum {
-    REG_DOWNLOAD_STATUS = 0,
-    REG_PROGRESS_PERCENT = 1,
-    REG_ERROR_CODE = 2,
-    REG_CURRENT_PART = 3,
-    NUM_MODBUS_REGISTERS = 4
+    REG_DOWNLOAD_STATUS = 1,
+    REG_PROGRESS_PERCENT = 2,
+    REG_ERROR_CODE = 3,
+    REG_CURRENT_PART = 4,
+    REG_FILE1_Download_COMPLETE = 5,
+    REG_FILE2_Download_COMPLETE = 6,
+    REG_FILE3_Download_COMPLETE = 7,
+    REG_FILE4_Download_COMPLETE = 8,
+    REG_DOWNLOAD_FINAL_SIZE_L = 9,
+    REG_DOWNLOAD_FINAL_SIZE_H = 10,
+    NUM_MODBUS_REGISTERS = 24
 } ModbusRegisterOffset;
 
 // Download Status values (Register 0)

@@ -302,6 +302,11 @@ public:
         }
         return true;
         #else
+        // Clear RX serial buffer to purge any delayed/stale responses
+        while (Serial1.available()) {
+            Serial1.read();
+        }
+        
         Serial1.print(cmd);
         uint32_t start = millis();
         int idx = 0;
@@ -354,17 +359,23 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
 
     if (x >= 1 && x <= FW_UPDATE_NUM_PARTS) {
         char url_command1[131];
-        snprintf(url_command1, sizeof(url_command1), "http://64.251.10.159/otafw_part%d.b64\r\n", x);
-        int urlLen = strlen(url_command1) - 2;
+        // Remove trailing \r\n from the URL payload to prevent leaving extra bytes in UART buffer
+        snprintf(url_command1, sizeof(url_command1), "http://64.251.10.159/otafw_part%d.b64", x);
+        int urlLen = strlen(url_command1);
         char url_command12[131];
         snprintf(url_command12, sizeof(url_command12), "AT+QHTTPURL=%d,160\r\n", urlLen);
+
+        char log_req[256];
+        snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
+        add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
 
         if (!module->sendCommand(url_command12, "CONNECT", 1000, 1))
             return 3;
         if (!module->sendCommand(url_command1, "OK", 6000, 1))
             return 4;
 
-        if (!module->sendCommandOpt("AT+QHTTPGET=240\r\n", "+QHTTPGET: 0", 10000, 3, "+QHTTPGET: 0"))
+        // Increase timeout to 120 seconds to allow download over cellular connection
+        if (!module->sendCommandOpt("AT+QHTTPGET=240\r\n", "+QHTTPGET: 0", 120000, 3, "+QHTTPGET: 0"))
             return 5;
         
         char read_cmd[128];
@@ -372,6 +383,11 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         if (!(module->sendCommandOpt(read_cmd, "+QHTTPREADFILE: 0", 60000, 2, "+QHTTPREADFILE: 705"))) {
             return 6;
         }
+        
+        char log_done[128];
+        snprintf(log_done, sizeof(log_done), "Part %d downloaded successfully to UFS", x);
+        add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
+
         module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
         delay(10);
         return 0; // Success
@@ -388,9 +404,19 @@ public:
     uint32_t qftp_file_open(String filename, uint8_t mode, uint8_t offset) {
         (void)mode; (void)offset;
         char cmd[128];
-        snprintf(cmd, sizeof(cmd), FTP_FILE_OPEN, filename.c_str());
-        module->sendCommand(cmd, "CONNECT", 1000, 2);
+        snprintf(cmd, sizeof(cmd), "AT+QFOPEN=\"%s\",0\r\n", filename.c_str());
+        #ifndef ESP_PLATFORM
+        module->sendCommand(cmd, "OK", 1000, 2);
         return 1027; // Dummy file handle
+        #else
+        if (module->sendCommand(cmd, "+QFOPEN:", 2000, 2)) {
+            char* ptr = strstr(module->buffer, "+QFOPEN:");
+            if (ptr != NULL) {
+                return (uint32_t)atoi(ptr + 8);
+            }
+        }
+        return 0; // Failed to open
+        #endif
     }
     
     int qftp_file_read(int32_t handle, int length, uint8_t *buff);
@@ -407,7 +433,6 @@ static TcpClient gprs(module);
 static qftp ftp(module);
 
 // Static buffers required for reading
-static uint8_t *psbuf = nullptr;
 static uint32_t finalsize = 0;
 static uint32_t spiffs_offset = 0;
 static uint32_t spiffs_size = 0;
@@ -500,6 +525,9 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
     int datasize = 1;
     int xcount = 0;
 
+    // Local stack-allocated buffer for chunk-wise decoding
+    static uint8_t decode_temp_buf[8192];
+
     while (datasize > 0) {
         uint32_t size = fp_size - spiffs_offset;
         int retry = 0;
@@ -533,18 +561,33 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
             spiffs_size = datasize;
 
             int ret = mbedtls_base64_decode(
-                psbuf + finalsize,
-                (datasize * 3) / 4,
+                decode_temp_buf,
+                sizeof(decode_temp_buf),
                 &decodedLen,
                 buf1,
                 datasize
             );
 
             if (ret == 0) {
+                // Write decoded buffer chunk directly to OTA partition
+                if (Update.write(decode_temp_buf, decodedLen) != decodedLen) {
+                    Serial.println("OTA Write chunk failed!");
+                    #ifdef ESP_PLATFORM
+                    Update.printError(Serial);
+                    #endif
+                    ftp.qftp_file_close(fp);
+                    return 0;
+                }
+                
                 spiffs_offset += datasize;
                 finalsize = finalsize + decodedLen;
                 success = true;
                 encodedOffset += datasize;
+
+                char log_details[256];
+                snprintf(log_details, sizeof(log_details), "Read chunk of %d base64 bytes at offset %d, flashed %d bytes binary. Total: %d bytes.", 
+                         datasize, (int)(spiffs_offset - datasize), (int)decodedLen, (int)finalsize);
+                add_log("ota_flash", "flashing", (spiffs_offset * 100) / fp_size, 0, type + 1, log_details);
             } else {
                 retry++;
                 ftp.qftp_file_seek(fp, encodedOffset, 0);
@@ -554,8 +597,6 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
         
         if (!success) {
             setFloatValue(ERROR4, 6);
-            free(psbuf);
-            psbuf = NULL;
             ftp.qftp_file_close(fp);
             return 0;
         }
@@ -582,18 +623,22 @@ static uint8_t trigger_firmware_update_flow() {
     
     setFloatValue(FW_DOWNLOAD_PROGRESS, 1);
     
-    // Allocate PSRAM buffer to hold full binary
-    psbuf = (uint8_t *)ps_calloc(1500 * 1024, 1);
-    if (psbuf) {
-        add_log("memory_alloc", "allocated", 5, 0, 0, "Allocated 1.5MB PSRAM buffer successfully");
-        setFloatValue(FW_DOWNLOAD_PROGRESS, 2);
-    } else {
-        setFloatValue(ERROR4, 1);
-        setFloatValue(FW_DOWNLOAD_PROGRESS, -1);
-        add_log("memory_alloc", "error", 0, ERR_MEMORY_PSRAM, 0, "1.5MB PSRAM allocation failed!");
+    // We no longer allocate a 1.5MB PSRAM buffer!
+    // Initialize OTA Update partition immediately
+    add_log("ota_flash", "initializing", 5, 0, 0, "Initializing OTA update flashing session...");
+    
+    #ifdef ESP_PLATFORM
+    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+        setFloatValue(ERROR4, 7);
+        Update.printError(Serial);
+        add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "Failed to initialize OTA partition!");
         return 0;
     }
+    #else
+    Update.begin(108); // Simulate binary size
+    #endif
     
+    setFloatValue(FW_DOWNLOAD_PROGRESS, 2);
     finalsize = 0;
     spiffs_offset = 0;
     
@@ -609,8 +654,9 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(ERROR4, k);
         if (k != 0) {
             setFloatValue(ERROR4, 11);
-            free(psbuf);
-            psbuf = NULL;
+            #ifdef ESP_PLATFORM
+            Update.abort();
+            #endif
             return 0;
         }
         
@@ -626,12 +672,13 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(FP_SIZE, 476856);
         #endif
         
-        // Loop open, seek, read chunks, and decode
+        // Loop open, seek, read chunks, and decode directly to OTA
         err_code = ftp_filedownload(part - 1, filename1, 6144, (char*)"qwe.b64");
         if (err_code == 0) {
             setFloatValue(FILE_UUID, 0);
-            free(psbuf);
-            psbuf = NULL;
+            #ifdef ESP_PLATFORM
+            Update.abort();
+            #endif
             return 0;
         }
         setFloatValue(FW_DOWNLOAD_PROGRESS, 2 + (part * 2));
@@ -646,41 +693,26 @@ static uint8_t trigger_firmware_update_flow() {
     add_log("validation", "checking", 90, 0, 4, details);
     modbus_set_status(STATUS_FLASHING);
     
-    // Commit the dynamic PSRAM buffer directly to the OTA partition using Native Update library
-    if (!Update.begin(finalsize)) {
-        setFloatValue(ERROR4, 7);
-        Update.printError(Serial);
-        free(psbuf);
-        psbuf = NULL;
-        return 0;
-    }
-    
-    if (Update.write(psbuf, finalsize) != (finalsize)) {
-        setFloatValue(ERROR4, 8);
-        Update.printError(Serial);
-        free(psbuf);
-        psbuf = NULL;
-        return 0;
-    }
-    
+    // Commit the OTA partition
     if (Update.end(true)) {
         setFloatValue(ERROR4, 9);
         modbus_set_status(STATUS_COMPLETE);
         modbus_set_progress(100);
-        free(psbuf);
-        psbuf = NULL;
+        add_log("system", "restarting", 100, 0, 4, "OTA Flashing complete. Restarting ESP32...");
+        delay(2000);
         ESP.restart();
     } else {
+        #ifdef ESP_PLATFORM
         Update.printError(Serial);
+        #endif
         setFloatValue(ERROR4, 10);
+        add_log("ota_flash", "error", 100, ERR_OTA_FLASH, 4, "OTA partition closing write failed!");
     }
     
     if (err_code == 1) {
         setFloatValue(FILE_UUID, 0);
     }
     
-    free(psbuf);
-    psbuf = NULL;
     return 1;
 }
 
@@ -735,13 +767,20 @@ static void handle_trigger() {
 }
 
 #ifndef MODEM_RX_PIN
-#define MODEM_RX_PIN 26
+#define MODEM_RX_PIN 1
 #endif
 #ifndef MODEM_TX_PIN
-#define MODEM_TX_PIN 27
+#define MODEM_TX_PIN 2
 #endif
 #ifndef MODEM_BAUD_RATE
 #define MODEM_BAUD_RATE 115200
+#endif
+
+#ifndef GSM_EN_PIN
+#define GSM_EN_PIN 21
+#endif
+#ifndef GSM_PWRKEY_PIN
+#define GSM_PWRKEY_PIN 5
 #endif
 
 #ifdef ESP_PLATFORM
@@ -756,6 +795,22 @@ void writeholdingregister_modbus() {}
 
 void setup() {
     Serial.begin(115200);
+    
+    #ifdef ESP_PLATFORM
+    // Power on GSM Modem sequence
+    pinMode(GSM_EN_PIN, OUTPUT);
+    pinMode(GSM_PWRKEY_PIN, OUTPUT);
+    
+    // Enable power regulator
+    digitalWrite(GSM_EN_PIN, HIGH);
+    delay(500);
+    
+    // Pulse PWRKEY low (standard active-low power key for Quectel)
+    digitalWrite(GSM_PWRKEY_PIN, LOW);
+    delay(2000);
+    digitalWrite(GSM_PWRKEY_PIN, HIGH);
+    delay(3000); // Wait for modem bootup
+    #endif
     
     // UART Buffer configuration and port opening from requirements
     Serial1.setRxBufferSize(8192);

@@ -471,20 +471,20 @@ const char index_html[] = R"rawhtml(
             <div class="panel-title">Modbus Register Bindings</div>
             <div class="register-list">
                 <div class="register-item">
-                    <span class="register-lbl">Holding Reg 0 (Status)</span>
-                    <span id="reg0" class="register-val">0</span>
+                    <span class="register-lbl">Holding Reg 1 (Status)</span>
+                    <span id="reg1" class="register-val">0</span>
                 </div>
                 <div class="register-item">
-                    <span class="register-lbl">Holding Reg 1 (Progress)</span>
-                    <span id="reg1" class="register-val">0%</span>
+                    <span class="register-lbl">Holding Reg 2 (Progress)</span>
+                    <span id="reg2" class="register-val">0%</span>
                 </div>
                 <div class="register-item">
-                    <span class="register-lbl">Holding Reg 2 (Error Code)</span>
-                    <span id="reg2" class="register-val">0</span>
-                </div>
-                <div class="register-item">
-                    <span class="register-lbl">Holding Reg 3 (Current Part)</span>
+                    <span class="register-lbl">Holding Reg 3 (Error Code)</span>
                     <span id="reg3" class="register-val">0</span>
+                </div>
+                <div class="register-item">
+                    <span class="register-lbl">Holding Reg 4 (Current Part)</span>
+                    <span id="reg4" class="register-val">0</span>
                 </div>
             </div>
 
@@ -588,10 +588,10 @@ const char index_html[] = R"rawhtml(
             document.getElementById('progressBar').style.width = `${data.progress}%`;
 
             // 3. Update Modbus labels
-            document.getElementById('reg0').innerText = data.status;
-            document.getElementById('reg1').innerText = `${data.progress}%`;
-            document.getElementById('reg2').innerText = data.error;
-            document.getElementById('reg3').innerText = data.part;
+            document.getElementById('reg1').innerText = data.status;
+            document.getElementById('reg2').innerText = `${data.progress}%`;
+            document.getElementById('reg3').innerText = data.error;
+            document.getElementById('reg4').innerText = data.part;
 
             // 4. Update Part node visual status
             for (let p = 1; p <= 4; p++) {

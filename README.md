@@ -56,4 +56,4 @@ To compile the test simulation server locally on Windows:
 g++ -O3 -Wall -Wextra -std=c++11 -x c++ Firmware_Update_Https_Call.ino -x none firmware_update.cpp modbus_state.cpp -lws2_32
 .\a.exe
 ```
-Open your web browser to `http://localhost:8080` to access the interactive web panel.
+Open your web browser to `http://192.168.4.1:80` to access the interactive web panel.
