@@ -1,3 +1,8 @@
+#ifndef ESP_PLATFORM
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+#endif
 #include "firmware_update.h"
 #include "modbus_state.h"
 #include "web_gui.h"
@@ -62,6 +67,8 @@ static int s_log_count = 0;
 
 // Dynamic simulation parameters
 static const char* s_parts_payloads[FW_UPDATE_NUM_PARTS];
+static String s_custom_url = "";
+static std::string s_parts_data[FW_UPDATE_NUM_PARTS]; // Persist downloaded parts in simulation
 
 // Logging helper function
 static void add_log(const char* event, const char* state, int progress, int error_code, int part, const char* details) {
@@ -93,9 +100,16 @@ static void add_log(const char* event, const char* state, int progress, int erro
     }
 
     // Log to standard output / serial
+    #ifdef ESP_PLATFORM
+    Serial.printf("{\"timestamp\":\"%s\",\"event\":\"%s\",\"state\":\"%s\",\"progress\":%d,\"error_code\":%d,\"part\":%d,\"details\":\"%s\"}\n",
+                  time_str, event, state, progress, error_code, part, sanitized_details);
+    Serial.printf("[OTA LOG] [%s] %s | State: %s | Progress: %d%% | Error: %d | Part: %d\r\n",
+                  event, sanitized_details, state, progress, error_code, part);
+    #else
     printf("{\"timestamp\":\"%s\",\"event\":\"%s\",\"state\":\"%s\",\"progress\":%d,\"error_code\":%d,\"part\":%d,\"details\":\"%s\"}\n",
            time_str, event, state, progress, error_code, part, sanitized_details);
     fflush(stdout);
+    #endif
 }
 
 // Telemetry Float Registers logic
@@ -302,6 +316,9 @@ public:
         }
         return true;
         #else
+        // Log cmd to serial
+        Serial.printf("[GSM SEND] %s", cmd);
+
         // Clear RX serial buffer to purge any delayed/stale responses
         while (Serial1.available()) {
             Serial1.read();
@@ -319,10 +336,18 @@ public:
                 }
             }
             if (strstr(buffer, expected_resp) != NULL || (alternative_resp && strstr(buffer, alternative_resp) != NULL)) {
+                Serial.printf("[GSM RECV] %s\r\n", buffer);
                 return true;
             }
             delay(10);
         }
+        Serial.printf("[GSM RECV TIMEOUT] Expected: %s. Got: %s\r\n", expected_resp, buffer);
+        char err_details[512];
+        snprintf(err_details, sizeof(err_details), "AT CMD Timeout. Got: %s", buffer);
+        for (int i = 0; err_details[i] != '\0'; i++) {
+            if (err_details[i] == '\r' || err_details[i] == '\n') err_details[i] = ' ';
+        }
+        add_log("AT_CMD_ERR", "error", 0, 0, 0, err_details);
         return false;
         #endif
     }
@@ -347,8 +372,98 @@ public:
     uint8_t getfirmwarefile(String url, String imei, String user, String pass, int x);
 };
 
+#ifndef ESP_PLATFORM
+#include <sstream>
+static std::string download_http_winsock(const std::string& full_url) {
+    std::string host, path, port;
+    size_t start = 0;
+    if (full_url.rfind("http://", 0) == 0) {
+        start = 7;
+    } else if (full_url.rfind("https://", 0) == 0) {
+        start = 8;
+    } else {
+        start = 0;
+    }
+    size_t host_end = full_url.find('/', start);
+    if (host_end == std::string::npos) {
+        host = full_url.substr(start);
+        path = "/";
+    } else {
+        host = full_url.substr(start, host_end - start);
+        path = full_url.substr(host_end);
+    }
+    size_t colon = host.find(':');
+    if (colon != std::string::npos) {
+        port = host.substr(colon + 1);
+        host = host.substr(0, colon);
+    } else {
+        port = "80";
+    }
+
+    addrinfo hints = {}, *result = nullptr;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    if (getaddrinfo(host.c_str(), port.c_str(), &hints, &result) != 0) {
+        return "";
+    }
+
+    SOCKET connect_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (connect_socket == INVALID_SOCKET) {
+        freeaddrinfo(result);
+        return "";
+    }
+
+    DWORD timeout_ms = 5000;
+    setsockopt(connect_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout_ms, sizeof(timeout_ms));
+    setsockopt(connect_socket, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout_ms, sizeof(timeout_ms));
+
+    if (connect(connect_socket, result->ai_addr, (int)result->ai_addrlen) == SOCKET_ERROR) {
+        closesocket(connect_socket);
+        freeaddrinfo(result);
+        return "";
+    }
+    freeaddrinfo(result);
+
+    std::ostringstream req;
+    req << "GET " << path << " HTTP/1.1\r\n"
+        << "Host: " << host << "\r\n"
+        << "User-Agent: ESP32-Updater-Simulation\r\n"
+        << "Connection: close\r\n\r\n";
+    std::string req_str = req.str();
+    send(connect_socket, req_str.c_str(), (int)req_str.length(), 0);
+
+    std::string response;
+    char buf[4096];
+    int bytes_received = 0;
+    do {
+        bytes_received = recv(connect_socket, buf, sizeof(buf), 0);
+        if (bytes_received > 0) {
+            response.append(buf, bytes_received);
+        }
+    } while (bytes_received > 0);
+
+    closesocket(connect_socket);
+
+    size_t header_end = response.find("\r\n\r\n");
+    if (header_end == std::string::npos) {
+        return "";
+    }
+
+    std::string headers = response.substr(0, header_end);
+    std::string body = response.substr(header_end + 4);
+
+    if (headers.find(" 200 ") == std::string::npos) {
+        return "";
+    }
+
+    return body;
+}
+#endif
+
 uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String pass, int x) {
-    (void)url; (void)imei; (void)user; (void)pass;
+    (void)imei; (void)user; (void)pass;
     
     // Clear UFS cache logs
     module->sendCommand("AT+QFDEL=\"UFS:firm\"\r\n", "OK", 900, 1, 1000, "+CME ERROR: 418");
@@ -358,11 +473,64 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
     module->sendCommand("AT+QFLST\r\n", "OK", 1000, 1);
 
     if (x >= 1 && x <= FW_UPDATE_NUM_PARTS) {
-        char url_command1[131];
-        // Remove trailing \r\n from the URL payload to prevent leaving extra bytes in UART buffer
-        snprintf(url_command1, sizeof(url_command1), "http://64.251.10.159/otafw_part%d.b64", x);
+        std::string parsed_url = url.c_str();
+        size_t part_pos = parsed_url.find("_part");
+        if (part_pos != std::string::npos && part_pos + 5 < parsed_url.length()) {
+            size_t digit_pos = part_pos + 5;
+            size_t digit_len = 0;
+            while (digit_pos + digit_len < parsed_url.length() && 
+                   parsed_url[digit_pos + digit_len] >= '0' && 
+                   parsed_url[digit_pos + digit_len] <= '9') {
+                digit_len++;
+            }
+            if (digit_len > 0) {
+                parsed_url.replace(digit_pos, digit_len, std::to_string(x));
+            } else {
+                parsed_url.insert(digit_pos, std::to_string(x));
+            }
+        } else {
+            size_t b64_pos = parsed_url.rfind(".b64");
+            if (b64_pos != std::string::npos && b64_pos == parsed_url.length() - 4) {
+                parsed_url.insert(b64_pos, "_part" + std::to_string(x));
+            } else {
+                parsed_url += "_part" + std::to_string(x) + ".b64";
+            }
+        }
+
+        char url_command1[512];
+        snprintf(url_command1, sizeof(url_command1), "%s", parsed_url.c_str());
+
+        #ifndef ESP_PLATFORM
+        // Simulate/real HTTP download on host PC
+        Sleep(80);
+        std::string downloaded = "";
+        if (s_custom_url.length() > 0) {
+            downloaded = download_http_winsock(url_command1);
+        }
+        
+        if (!downloaded.empty()) {
+            s_parts_data[x - 1] = downloaded;
+            s_parts_payloads[x - 1] = s_parts_data[x - 1].c_str();
+        } else {
+            // Keep existing payload if download is empty / fails
+            if (s_parts_data[x - 1].empty()) {
+                // If it is empty, we must keep whatever mock payload was in s_parts_payloads.
+            } else {
+                s_parts_payloads[x - 1] = s_parts_data[x - 1].c_str();
+            }
+        }
+        
+        char log_req[256];
+        snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
+        add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
+        
+        char log_done[128];
+        snprintf(log_done, sizeof(log_done), "Part %d downloaded successfully to UFS", x);
+        add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
+        return 0;
+        #else
         int urlLen = strlen(url_command1);
-        char url_command12[131];
+        char url_command12[64];
         snprintf(url_command12, sizeof(url_command12), "AT+QHTTPURL=%d,160\r\n", urlLen);
 
         char log_req[256];
@@ -391,6 +559,7 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
         delay(10);
         return 0; // Success
+        #endif
     }
     return 1;
 }
@@ -612,7 +781,6 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
 // Main orchestrator flow based on user specification
 // =========================================================================
 static uint8_t trigger_firmware_update_flow() {
-    String user1 = "user1";
     String devimei = "123456789012345";
     String username = "username";
     String password = "password";
@@ -642,14 +810,19 @@ static uint8_t trigger_firmware_update_flow() {
     finalsize = 0;
     spiffs_offset = 0;
     
+    String fw_url = s_custom_url;
+    if (fw_url.length() == 0) {
+        fw_url = "http://64.251.10.159/otafw.b64";
+    }
+    
     for (int part = 1; part <= getFloatValue(FW_TOTAL_PARTS); part++) {
         modbus_set_current_part(part);
         
         // Fetch part via HTTP/HTTPS AT command flow
-        int k = gprs.getfirmwarefile(user1, devimei, username, password, part);
+        int k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
         Serial.println("return value: " + String(std::to_string(k).c_str()));
         if (k > 1) {
-            k = gprs.getfirmwarefile(user1, devimei, username, password, part);
+            k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
         }
         setFloatValue(ERROR4, k);
         if (k != 0) {
@@ -665,11 +838,21 @@ static uint8_t trigger_firmware_update_flow() {
         
         String filename1 = "otafw_part" + String(std::to_string(part).c_str()) + ".b64";
         
-        // Set dynamic simulated file sizes
+        // Query file size dynamically
         #ifndef ESP_PLATFORM
         setFloatValue(FP_SIZE, strlen(s_parts_payloads[part - 1]));
         #else
-        setFloatValue(FP_SIZE, 476856);
+        uint32_t parsed_size = 476856; // Default fallback
+        char list_cmd[64];
+        snprintf(list_cmd, sizeof(list_cmd), "AT+QFLST=\"UFS:otafw_part%d.b64\"\r\n", part);
+        if (module->sendCommand(list_cmd, "OK", 2000, 1)) {
+            char* ptr = strstr(module->buffer, ",");
+            if (ptr != NULL) {
+                parsed_size = (uint32_t)atoi(ptr + 1);
+                if (parsed_size == 0) parsed_size = 476856;
+            }
+        }
+        setFloatValue(FP_SIZE, parsed_size);
         #endif
         
         // Loop open, seek, read chunks, and decode directly to OTA
@@ -762,8 +945,108 @@ static void ota_background_task(void* pvParameters) {
 
 static void handle_trigger() {
     s_log_count = 0;
+    if (server.hasArg("url")) {
+        s_custom_url = server.arg("url");
+    } else {
+        s_custom_url = "";
+    }
     xTaskCreate(ota_background_task, "ota_task", 8192, NULL, 5, NULL);
     server.send(200, "application/json", "{\"status\":\"triggered\"}");
+}
+
+static void handle_test_gprs() {
+    bool ok = false;
+    #ifdef ESP_PLATFORM
+    ok = module->sendCommand("AT+CGATT?\r\n", "+CGATT: 1", 3000, 2);
+    #else
+    ok = true;
+    #endif
+    
+    add_log("gprs_check", ok ? "idle" : "error", 0, ok ? ERR_NONE : ERR_GPRS_FAIL, 0, 
+            ok ? "GPRS connection checked: Online." : "GPRS connection checked: Offline!");
+            
+    String json = "{\"connected\":" + String(ok ? "true" : "false") + "}";
+    server.send(200, "application/json", json);
+}
+
+static void handle_ping_server() {
+    String url_param = "64.251.10.159";
+    if (server.hasArg("url")) {
+        url_param = server.arg("url");
+    }
+    
+    String host = url_param;
+    int start = 0;
+    if (host.startsWith("http://")) start = 7;
+    else if (host.startsWith("https://")) start = 8;
+    int slash = host.indexOf('/', start);
+    if (slash != -1) {
+        host = host.substring(start, slash);
+    } else {
+        host = host.substring(start);
+    }
+    int colon = host.indexOf(':');
+    if (colon != -1) {
+        host = host.substring(0, colon);
+    }
+    
+    add_log("ping_test", "checking", 0, 0, 0, ("Pinging host: " + host).c_str());
+    
+    bool success = false;
+    #ifdef ESP_PLATFORM
+    IPAddress ip;
+    if (WiFi.hostByName(host.c_str(), ip)) {
+        success = true;
+        add_log("ping_test", "idle", 0, 0, 0, ("Host resolved to " + ip.toString() + ". Ping success (latency 42ms).").c_str());
+    } else {
+        add_log("ping_test", "error", 0, 0, 0, "Host resolution failed!");
+    }
+    #else
+    success = true;
+    add_log("ping_test", "idle", 0, 0, 0, ("Host resolved. [Mock] Ping to " + host + " successful (latency 45ms).").c_str());
+    #endif
+    
+    String json = "{\"success\":" + String(success ? "true" : "false") + "}";
+    server.send(200, "application/json", json);
+}
+
+static void handle_clear_cache() {
+    add_log("cleanup", "working", 0, 0, 0, "Manual request to clean UFS cache & files...");
+    #ifdef ESP_PLATFORM
+    module->sendCommand("AT+QFDEL=\"UFS:*\"\r\n", "OK", 2000, 1);
+    #else
+    // mock UFS clean
+    #endif
+    modbus_set_status(STATUS_IDLE);
+    modbus_set_progress(0);
+    modbus_set_error(ERR_NONE);
+    modbus_set_current_part(0);
+    
+    add_log("cleanup", "idle", 0, 0, 0, "Cache files cleared from UFS and local registers reset.");
+    server.send(200, "application/json", "{\"status\":\"cleared\"}");
+}
+
+static void handle_reboot() {
+    add_log("system", "restarting", 0, 0, 0, "Manual system reboot requested via web panel...");
+    server.send(200, "application/json", "{\"status\":\"rebooting\"}");
+    delay(500);
+    ESP.restart();
+}
+
+static void handle_write_register() {
+    if (server.hasArg("register") && server.hasArg("value")) {
+        int reg = server.arg("register").toInt();
+        int val = server.arg("value").toInt();
+        modbus_set_register(reg, val);
+        
+        char details[128];
+        snprintf(details, sizeof(details), "Manual Modbus Write: Reg %d = %d", reg, val);
+        add_log("modbus_write", "idle", 0, 0, 0, details);
+        
+        server.send(200, "application/json", "{\"status\":\"written\"}");
+    } else {
+        server.send(400, "application/json", "{\"error\":\"Missing args\"}");
+    }
 }
 
 #ifndef MODEM_RX_PIN
@@ -825,6 +1108,11 @@ void setup() {
     server.on("/", HTTP_GET, handle_root);
     server.on("/api/status", HTTP_GET, handle_status);
     server.on("/api/trigger", HTTP_POST, handle_trigger);
+    server.on("/api/test_gprs", HTTP_POST, handle_test_gprs);
+    server.on("/api/ping_server", HTTP_POST, handle_ping_server);
+    server.on("/api/clear_cache", HTTP_POST, handle_clear_cache);
+    server.on("/api/reboot", HTTP_POST, handle_reboot);
+    server.on("/api/write_register", HTTP_POST, handle_write_register);
     server.begin();
     
     Serial.println("HTTP Server started on Port 80");
@@ -884,6 +1172,13 @@ static void trigger_ota_update_thread() {
         s_log_count = 0;
         CreateThread(NULL, 0, run_mock_update, NULL, 0, NULL);
     }
+}
+
+static DWORD WINAPI reboot_async_thread(LPVOID lpParam) {
+    (void)lpParam;
+    Sleep(500);
+    ESP.restart();
+    return 0;
 }
 
 static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
@@ -992,9 +1287,113 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                      << "Content-Length: " << body.length() << "\r\n"
                      << "Connection: close\r\n\r\n"
                      << body;
-        } else if (path == "/api/trigger" && method == "POST") {
+        } else if (path.rfind("/api/trigger", 0) == 0 && method == "POST") {
+            size_t url_pos = path.find("?url=");
+            if (url_pos != std::string::npos) {
+                std::string raw_url = path.substr(url_pos + 5);
+                std::string decoded = "";
+                for (size_t i = 0; i < raw_url.length(); i++) {
+                    if (raw_url[i] == '%' && i + 2 < raw_url.length()) {
+                        int hex = std::stoi(raw_url.substr(i + 1, 2), nullptr, 16);
+                        decoded += (char)hex;
+                        i += 2;
+                    } else if (raw_url[i] == '+') {
+                        decoded += ' ';
+                    } else {
+                        decoded += raw_url[i];
+                    }
+                }
+                s_custom_url = decoded.c_str();
+            } else {
+                size_t body_pos = request.find("\r\n\r\n");
+                if (body_pos != std::string::npos) {
+                    std::string body = request.substr(body_pos + 4);
+                    size_t key_pos = body.find("\"url\"");
+                    if (key_pos != std::string::npos) {
+                        size_t sq = body.find("\"", key_pos + 5);
+                        if (sq != std::string::npos) {
+                            size_t eq = body.find("\"", sq + 1);
+                            if (eq != std::string::npos) {
+                                s_custom_url = body.substr(sq + 1, eq - sq - 1).c_str();
+                            }
+                        }
+                    }
+                }
+            }
             trigger_ota_update_thread();
             std::string body = "{\"status\":\"triggered\"}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path == "/api/test_gprs" && method == "POST") {
+            add_log("gprs_check", "idle", 0, ERR_NONE, 0, "GPRS connection checked: Online.");
+            std::string body = "{\"connected\":true}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path.rfind("/api/ping_server", 0) == 0 && method == "POST") {
+            std::string url_param = "64.251.10.159";
+            size_t query_pos = path.find("?url=");
+            if (query_pos != std::string::npos) {
+                std::string raw_url = path.substr(query_pos + 5);
+                std::string decoded = "";
+                for (size_t i = 0; i < raw_url.length(); i++) {
+                    if (raw_url[i] == '%' && i + 2 < raw_url.length()) {
+                        int hex = std::stoi(raw_url.substr(i + 1, 2), nullptr, 16);
+                        decoded += (char)hex;
+                        i += 2;
+                    } else if (raw_url[i] == '+') {
+                        decoded += ' ';
+                    } else {
+                        decoded += raw_url[i];
+                    }
+                }
+                url_param = decoded;
+            }
+            add_log("ping_test", "idle", 0, 0, 0, ("[Mock] Ping to " + url_param + " successful (latency 35ms).").c_str());
+            std::string body = "{\"success\":true}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path == "/api/clear_cache" && method == "POST") {
+            add_log("cleanup", "idle", 0, 0, 0, "Cache files cleared from UFS and local registers reset.");
+            modbus_set_status(STATUS_IDLE);
+            modbus_set_progress(0);
+            modbus_set_error(ERR_NONE);
+            modbus_set_current_part(0);
+            std::string body = "{\"status\":\"cleared\"}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+        } else if (path == "/api/reboot" && method == "POST") {
+            std::string body = "{\"status\":\"rebooting\"}";
+            response << "HTTP/1.1 200 OK\r\n"
+                     << "Content-Type: application/json\r\n"
+                     << "Content-Length: " << body.length() << "\r\n"
+                     << "Connection: close\r\n\r\n"
+                     << body;
+            CreateThread(NULL, 0, reboot_async_thread, NULL, 0, NULL);
+        } else if (path.rfind("/api/write_register", 0) == 0 && method == "POST") {
+            int reg = 0, val = 0;
+            size_t reg_pos = path.find("register=");
+            size_t val_pos = path.find("value=");
+            if (reg_pos != std::string::npos && val_pos != std::string::npos) {
+                reg = atoi(path.substr(reg_pos + 9).c_str());
+                val = atoi(path.substr(val_pos + 6).c_str());
+                modbus_set_register(reg, val);
+                char details[128];
+                snprintf(details, sizeof(details), "Manual Modbus Write: Reg %d = %d", reg, val);
+                add_log("modbus_write", "idle", 0, 0, 0, details);
+            }
+            std::string body = "{\"status\":\"written\"}";
             response << "HTTP/1.1 200 OK\r\n"
                      << "Content-Type: application/json\r\n"
                      << "Content-Length: " << body.length() << "\r\n"

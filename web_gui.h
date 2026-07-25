@@ -111,7 +111,7 @@ const char index_html[] = R"rawhtml(
 
         .grid {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-columns: 1.1fr 0.9fr;
             gap: 30px;
             margin-bottom: 30px;
         }
@@ -127,6 +127,11 @@ const char index_html[] = R"rawhtml(
             border: 1px solid var(--border-color);
             border-radius: 18px;
             padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel:last-child {
+            margin-bottom: 0;
         }
 
         .panel-title {
@@ -136,6 +141,39 @@ const char index_html[] = R"rawhtml(
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 20px;
+        }
+
+        /* Input styling */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .text-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
 
         /* Progress Card styling */
@@ -258,20 +296,82 @@ const char index_html[] = R"rawhtml(
             font-weight: 600;
         }
 
+        /* Testing and diagnostic grid */
+        .diag-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .btn-action:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-action:disabled {
+            background: rgba(255, 255, 255, 0.01);
+            border-color: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+        }
+
+        .btn-action-danger {
+            color: var(--rose);
+            background: rgba(244, 63, 94, 0.05);
+            border-color: rgba(244, 63, 94, 0.15);
+        }
+
+        .btn-action-danger:hover:not(:disabled) {
+            background: rgba(244, 63, 94, 0.15);
+            border-color: rgba(244, 63, 94, 0.25);
+        }
+
+        .btn-action-accent {
+            color: var(--accent);
+            background: rgba(168, 85, 247, 0.05);
+            border-color: rgba(168, 85, 247, 0.15);
+        }
+
+        .btn-action-accent:hover:not(:disabled) {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
         .btn-trigger {
             width: 100%;
             background: linear-gradient(90deg, #6366f1, #a855f7);
             border: none;
             color: white;
-            padding: 16px;
+            padding: 14px;
             border-radius: 12px;
             font-family: 'Outfit', sans-serif;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.5);
-            margin-top: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -292,6 +392,55 @@ const char index_html[] = R"rawhtml(
             color: var(--text-secondary);
             cursor: not-allowed;
             box-shadow: none;
+        }
+
+        /* Status override injectors */
+        .injector-panel {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 15px;
+        }
+
+        .injector-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .injector-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-inj {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-inj:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-inj.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 0 10px var(--primary-glow);
         }
 
         /* Console Terminal */
@@ -423,75 +572,126 @@ const char index_html[] = R"rawhtml(
     </header>
 
     <div class="grid">
-        <!-- Main update panel -->
-        <div class="panel">
-            <div class="panel-title">Update Status & Telemetry</div>
-            
-            <div class="status-container">
-                <div>
-                    <span id="statusTxt" class="status-value">Idle</span>
+        <!-- Left Column: Status, Telemetry & Settings -->
+        <div>
+            <div class="panel">
+                <div class="panel-title">Update Status & Telemetry</div>
+                
+                <div class="status-container">
+                    <div>
+                        <span id="statusTxt" class="status-value">Idle</span>
+                    </div>
+                    <div class="status-value" id="progressVal">0%</div>
                 </div>
-                <div class="status-value" id="progressVal">0%</div>
-            </div>
 
-            <div class="progress-track">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
+                <div class="progress-track">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
 
-            <div style="margin-bottom: 20px;">
-                <span style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">Sequential Chunks Tracker</span>
-                <div class="parts-tracker">
-                    <div id="part1" class="part-node">
-                        <span class="part-num">Part 1</span>
-                        <div class="part-dot"></div>
+                <div style="margin-bottom: 0px;">
+                    <span style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">Sequential Chunks Tracker</span>
+                    <div class="parts-tracker">
+                        <div id="part1" class="part-node">
+                            <span class="part-num">Part 1</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part2" class="part-node">
+                            <span class="part-num">Part 2</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part3" class="part-node">
+                            <span class="part-num">Part 3</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part4" class="part-node">
+                            <span class="part-num">Part 4</span>
+                            <div class="part-dot"></div>
+                        </div>
                     </div>
-                    <div id="part2" class="part-node">
-                        <span class="part-num">Part 2</span>
-                        <div class="part-dot"></div>
-                    </div>
-                    <div id="part3" class="part-node">
-                        <span class="part-num">Part 3</span>
-                        <div class="part-dot"></div>
-                    </div>
-                    <div id="part4" class="part-node">
-                        <span class="part-num">Part 4</span>
-                        <div class="part-dot"></div>
-                    </div>
+                </div>
+
+                <div id="errorBox" class="error-diagnostics">
+                    <span class="error-title">Update Failed</span>
+                    <span id="errorDesc">Connection timed out during HTTP handshakes.</span>
                 </div>
             </div>
 
-            <div id="errorBox" class="error-diagnostics">
-                <span class="error-title">Update Failed</span>
-                <span id="errorDesc">Connection timed out during HTTP handshakes.</span>
+            <div class="panel">
+                <div class="panel-title">Firmware Configuration</div>
+                <div class="input-group">
+                    <label for="fwUrlInput">Firmware HTTP URL Link</label>
+                    <input type="text" id="fwUrlInput" class="text-input" placeholder="http://64.251.10.159/otafw.b64" value="http://64.251.10.159/otafw.b64">
+                </div>
+                <button id="btnTrigger" class="btn-trigger" onclick="triggerOTA()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    Trigger OTA Update
+                </button>
             </div>
         </div>
 
-        <!-- Modbus register tracking panel -->
-        <div class="panel">
-            <div class="panel-title">Modbus Register Bindings</div>
-            <div class="register-list">
-                <div class="register-item">
-                    <span class="register-lbl">Holding Reg 1 (Status)</span>
-                    <span id="reg1" class="register-val">0</span>
-                </div>
-                <div class="register-item">
-                    <span class="register-lbl">Holding Reg 2 (Progress)</span>
-                    <span id="reg2" class="register-val">0%</span>
-                </div>
-                <div class="register-item">
-                    <span class="register-lbl">Holding Reg 3 (Error Code)</span>
-                    <span id="reg3" class="register-val">0</span>
-                </div>
-                <div class="register-item">
-                    <span class="register-lbl">Holding Reg 4 (Current Part)</span>
-                    <span id="reg4" class="register-val">0</span>
+        <!-- Right Column: Modbus Bindings & Action Diagnostics -->
+        <div>
+            <div class="panel">
+                <div class="panel-title">Modbus Register Bindings</div>
+                <div class="register-list">
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 1 (Status)</span>
+                        <span id="reg1" class="register-val">0</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 2 (Progress)</span>
+                        <span id="reg2" class="register-val">0%</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 3 (Error Code)</span>
+                        <span id="reg3" class="register-val">0</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 4 (Current Part)</span>
+                        <span id="reg4" class="register-val">0</span>
+                    </div>
                 </div>
             </div>
 
-            <button id="btnTrigger" class="btn-trigger" onclick="triggerOTA()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                Trigger OTA Update
-            </button>
+            <div class="panel">
+                <div class="panel-title">Diagnostics & Test Actions</div>
+                <div class="diag-grid">
+                    <button class="btn-action" onclick="testGprs()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.5a5 5 0 0 1 7-7 5 5 0 0 1 7 7M2 17a10 10 0 0 1 20 0M12 20h.01"/></svg>
+                        Test GPRS
+                    </button>
+                    <button class="btn-action" onclick="pingServer()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7M16 16l2 2 4-4"/></svg>
+                        Ping Server
+                    </button>
+                    <button class="btn-action" onclick="clearCache()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                        Clear UFS
+                    </button>
+                    <button class="btn-action btn-action-accent" onclick="clearErrorAck()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3"/></svg>
+                        ACK Errors
+                    </button>
+                </div>
+                <button class="btn-action btn-action-danger" style="width:100%; margin-top:12px;" onclick="rebootDevice()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+                    Reboot ESP32 Target Device
+                </button>
+
+                <!-- Modbus Manual Override Simulator -->
+                <div class="injector-panel">
+                    <div class="injector-lbl">Modbus Live Register Simulator</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">Force Status register values to check layouts:</div>
+                    <div class="injector-row">
+                        <button class="btn-inj" onclick="simulateStatus(0)">Idle</button>
+                        <button class="btn-inj" onclick="simulateStatus(1)">Downloading</button>
+                        <button class="btn-inj" onclick="simulateStatus(2)">Decoding</button>
+                        <button class="btn-inj" onclick="simulateStatus(3)">Flashing</button>
+                        <button class="btn-inj" onclick="simulateStatus(4)">Complete</button>
+                        <button class="btn-inj" onclick="simulateStatus(5)">Error State</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -523,7 +723,11 @@ const char index_html[] = R"rawhtml(
         2: 'HTTP/HTTPS connection timeout or empty response',
         3: 'Base64 parsing decode failure / CRC integrity error',
         4: 'Memory allocation error (SPIRAM/PSRAM heap out of memory)',
-        5: 'ESP32 partition flash update operations failed'
+        5: 'ESP32 partition flash update operations failed',
+        6: 'Chunk download base64 decoding error',
+        7: 'OTA begin initialization failed on partition',
+        10: 'OTA end finalization write failed',
+        11: 'HTTP Get part transaction error status code'
     };
 
     let logOffset = 0;
@@ -597,7 +801,7 @@ const char index_html[] = R"rawhtml(
             for (let p = 1; p <= 4; p++) {
                 const node = document.getElementById(`part${p}`);
                 node.className = 'part-node';
-                if (data.part >= p && data.status > 1) {
+                if (data.part >= p && data.status > 1 && data.status !== 5) {
                     node.classList.add('completed');
                 } else if (data.status === 1 && data.part === p) {
                     node.classList.add('active');
@@ -608,7 +812,7 @@ const char index_html[] = R"rawhtml(
             const errorBox = document.getElementById('errorBox');
             if (data.error > 0) {
                 errorBox.className = 'error-diagnostics visible';
-                document.getElementById('errorDesc').innerText = ERROR_MAP[data.error] || 'Unknown state';
+                document.getElementById('errorDesc').innerText = ERROR_MAP[data.error] || `Error code ${data.error}`;
             } else {
                 errorBox.className = 'error-diagnostics';
             }
@@ -620,6 +824,16 @@ const char index_html[] = R"rawhtml(
             } else {
                 btn.setAttribute('disabled', 'true');
             }
+
+            // Highlight simulator buttons active state
+            const buttons = document.querySelectorAll('.btn-inj');
+            buttons.forEach((b, idx) => {
+                if (idx === data.status) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
 
             // 7. Render dynamic logs
             if (data.logs && data.logs.length > 0) {
@@ -638,18 +852,108 @@ const char index_html[] = R"rawhtml(
 
     async function triggerOTA() {
         const btn = document.getElementById('btnTrigger');
+        const urlInput = document.getElementById('fwUrlInput').value;
         btn.setAttribute('disabled', 'true');
         clearConsole();
         logOffset = 0;
-        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence. Requesting REST API...', 'info');
+        appendLog(null, 'system', 'triggering', 0, 0, 0, `User triggered OTA sequence for URL: ${urlInput}`, 'info');
         
         try {
-            const res = await fetch('/api/trigger', { method: 'POST' });
+            const res = await fetch(`/api/trigger?url=${encodeURIComponent(urlInput)}`, { method: 'POST' });
             if (!res.ok) throw new Error('API server rejected trigger request');
             appendLog(null, 'system', 'triggered', 0, 0, 0, 'OTA update process successfully spawned in background.', 'info');
         } catch (e) {
             appendLog(null, 'system', 'error', 0, 0, 0, 'Failed to trigger update: ' + e.message, 'error');
             btn.removeAttribute('disabled');
+        }
+    }
+
+    async function testGprs() {
+        appendLog(null, 'gprs_diag', 'checking', 0, 0, 0, 'Sending GPRS diagnostics inquiry...', 'info');
+        try {
+            const res = await fetch('/api/test_gprs', { method: 'POST' });
+            const data = await res.json();
+            if (data.connected) {
+                appendLog(null, 'gprs_diag', 'idle', 0, 0, 0, 'GPRS connection verified successfully.', 'info');
+            } else {
+                appendLog(null, 'gprs_diag', 'error', 0, 1, 0, 'GPRS connection is offline!', 'error');
+            }
+        } catch (e) {
+            appendLog(null, 'gprs_diag', 'error', 0, 1, 0, 'GPRS verification failed: ' + e.message, 'error');
+        }
+    }
+
+    async function pingServer() {
+        const urlInput = document.getElementById('fwUrlInput').value;
+        appendLog(null, 'ping_diag', 'checking', 0, 0, 0, `Checking host resolution and pinging server: ${urlInput}...`, 'info');
+        try {
+            const res = await fetch(`/api/ping_server?url=${encodeURIComponent(urlInput)}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                appendLog(null, 'ping_diag', 'idle', 0, 0, 0, 'Ping transaction complete. Target server responded.', 'info');
+            } else {
+                appendLog(null, 'ping_diag', 'error', 0, 2, 0, 'Target server ping transaction failed!', 'error');
+            }
+        } catch (e) {
+            appendLog(null, 'ping_diag', 'error', 0, 2, 0, 'Ping request failed: ' + e.message, 'error');
+        }
+    }
+
+    async function clearCache() {
+        appendLog(null, 'cleanup', 'working', 0, 0, 0, 'Sending cache cleanup command...', 'info');
+        try {
+            await fetch('/api/clear_cache', { method: 'POST' });
+            appendLog(null, 'cleanup', 'idle', 0, 0, 0, 'Modem storage cache cleared.', 'info');
+            logOffset = 0;
+            clearConsole();
+        } catch (e) {
+            appendLog(null, 'cleanup', 'error', 0, 0, 0, 'Cache cleanup command failed: ' + e.message, 'error');
+        }
+    }
+
+    async function clearErrorAck() {
+        appendLog(null, 'ack_errors', 'working', 0, 0, 0, 'Acknowledging and clearing diagnostic error registers...', 'info');
+        try {
+            await fetch('/api/write_register?register=3&value=0', { method: 'POST' });
+            await fetch('/api/write_register?register=1&value=0', { method: 'POST' });
+            appendLog(null, 'ack_errors', 'idle', 0, 0, 0, 'Diagnostic error status acknowledged and reset to Idle.', 'info');
+        } catch (e) {
+            appendLog(null, 'ack_errors', 'error', 0, 0, 0, 'ACK command failed: ' + e.message, 'error');
+        }
+    }
+
+    async function rebootDevice() {
+        if (!confirm("Are you sure you want to reboot the ESP32 target controller?")) return;
+        appendLog(null, 'reboot', 'restarting', 0, 0, 0, 'Sending hardware reboot command. Device offline...', 'warn');
+        try {
+            await fetch('/api/reboot', { method: 'POST' });
+            setTimeout(() => {
+                appendLog(null, 'reboot', 'complete', 0, 0, 0, 'Device rebooted. Dashboard reconnected.', 'info');
+            }, 3000);
+        } catch (e) {
+            appendLog(null, 'reboot', 'error', 0, 0, 0, 'Reboot command failed: ' + e.message, 'error');
+        }
+    }
+
+    async function simulateStatus(statusVal) {
+        appendLog(null, 'sim_inject', 'working', 0, 0, 0, `Injecting simulated register status: ${statusVal}...`, 'info');
+        try {
+            await fetch(`/api/write_register?register=1&value=${statusVal}`, { method: 'POST' });
+            let prog = 0;
+            if (statusVal === 1) prog = 15;
+            else if (statusVal === 2) prog = 45;
+            else if (statusVal === 3) prog = 85;
+            else if (statusVal === 4) prog = 100;
+            
+            await fetch(`/api/write_register?register=2&value=${prog}`, { method: 'POST' });
+            
+            if (statusVal === 5) {
+                await fetch(`/api/write_register?register=3&value=3`, { method: 'POST' });
+            } else {
+                await fetch(`/api/write_register?register=3&value=0`, { method: 'POST' });
+            }
+        } catch (e) {
+            console.error('Simulation write failed:', e);
         }
     }
 
