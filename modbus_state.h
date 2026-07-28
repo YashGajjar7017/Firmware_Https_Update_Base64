@@ -9,16 +9,28 @@ extern "C" {
 
 // Modbus Register Map
 typedef enum {
-    REG_DOWNLOAD_STATUS = 1,
-    REG_PROGRESS_PERCENT = 2,
-    REG_ERROR_CODE = 3,
-    REG_CURRENT_PART = 4,
-    REG_FILE1_Download_COMPLETE = 5,
-    REG_FILE2_Download_COMPLETE = 6,
-    REG_FILE3_Download_COMPLETE = 7,
-    REG_FILE4_Download_COMPLETE = 8,
-    REG_DOWNLOAD_FINAL_SIZE_L = 9,
-    REG_DOWNLOAD_FINAL_SIZE_H = 10,
+    REG_FILE1_STATUS = 1,
+    REG_FILE1_PROGRESS = 3,
+    REG_FILE1_PSRAM = 5,
+    
+    REG_FILE2_STATUS = 6,
+    REG_FILE2_PROGRESS = 8,
+    REG_FILE2_PSRAM = 10,
+    
+    REG_FILE3_STATUS = 11,
+    REG_FILE3_PROGRESS = 13,
+    REG_FILE3_PSRAM = 15,
+    
+    REG_FILE4_STATUS = 16,
+    REG_FILE4_PROGRESS = 18,
+    REG_FILE4_PSRAM = 20,
+    
+    // Obsolete but kept for code compatibility
+    REG_DOWNLOAD_STATUS = 21,
+    REG_PROGRESS_PERCENT = 22,
+    REG_ERROR_CODE = 23,
+    REG_CURRENT_PART = 0,
+    
     NUM_MODBUS_REGISTERS = 24
 } ModbusRegisterOffset;
 

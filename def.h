@@ -2,31 +2,31 @@
 
 // Base64_File1_Status
 #define Base64_File1_Downloading 1
-#define Base64_File1_Decompressing 2
-#define Base64_File1_Flashing 3
-#define Base64_File1_Error 4
-#define Base64_File1_Completed 5
+#define Base64_File1_Decompressing 3
+#define Base64_File1_Flashing 5
+#define Base64_File1_Error 7
+#define Base64_File1_Completed 9
 
 // Base64_File2_Status
-#define Base64_File2_Downloading 6
-#define Base64_File2_Decompressing 7
-#define Base64_File2_Flashing 8
-#define Base64_File2_Error 9
-#define Base64_File2_Completed 10
+#define Base64_File2_Downloading 11
+#define Base64_File2_Decompressing 13
+#define Base64_File2_Flashing 15
+#define Base64_File2_Error 17
+#define Base64_File2_Completed 19
 
 // Base64_File3_Status
-#define Base64_File3_Downloading 11
-#define Base64_File3_Decompressing 12
-#define Base64_File3_Flashing 13
-#define Base64_File3_Error 14
-#define Base64_File3_Completed 15
+#define Base64_File3_Downloading 21
+#define Base64_File3_Decompressing 23
+#define Base64_File3_Flashing 25
+#define Base64_File3_Error 27
+#define Base64_File3_Completed 29
 
 // Base64_File4_Status
-#define Base64_File4_Downloading 16
-#define Base64_File4_Decompressing 17
-#define Base64_File4_Flashing 18
-#define Base64_File4_Error 19
-#define Base64_File4_Completed 20
+#define Base64_File4_Downloading 31
+#define Base64_File4_Decompressing 33
+#define Base64_File4_Flashing 35
+#define Base64_File4_Error 37
+#define Base64_File4_Completed 39
 
 void readholdingregister_modbus();
 void writeholdingregister_modbus();

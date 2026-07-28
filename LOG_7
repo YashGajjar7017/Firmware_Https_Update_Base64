@@ -1,0 +1,90 @@
+{"timestamp":"1970-01-01T00:00:13","event":"ota_flash","state":"initializing","progress":5,"error_code":0,"part":0,"details":"Initializing OTA update flashing session..."}
+[OTA LOG] [ota_flash] Initializing OTA update flashing session... | State: initializing | Progress: 5% | Error: 0 | Part: 0
+{"timestamp":"1970-01-01T00:00:13","event":"PSRAM_ALLOC","state":"ready","progress":2,"error_code":0,"part":0,"details":"PSRAM allocated: Base64 Temp 500000 bytes, Binary Accumulator 1500000 bytes"}
+[OTA LOG] [PSRAM_ALLOC] PSRAM allocated: Base64 Temp 500000 bytes, Binary Accumulator 1500000 bytes | State: ready | Progress: 2% | Error: 0 | Part: 0
+[PSRAM] PSRAM allocated: Base64 Temp 500000 bytes, Binary Accumulator 1500000 bytes
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"Pre-clearing ALL old OTA firmware files from modem UFS storage..."}
+[OTA LOG] [UFS_CLEAN] Pre-clearing ALL old OTA firmware files from modem UFS storage... | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Pre-clean: UFS:otafw_part1.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part1.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":2,"details":"Pre-clean: UFS:otafw_part2.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part2.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 2
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":3,"details":"Pre-clean: UFS:otafw_part3.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part3.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 3
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":4,"details":"Pre-clean: UFS:otafw_part4.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part4.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 4
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"UFS pre-clean complete. Starting sequential part downloads."}
+[OTA LOG] [UFS_CLEAN] UFS pre-clean complete. Starting sequential part downloads. | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:14","event":"UFS_DEL","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Cleared old UFS file: UFS:otafw_part1.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part1.b64 before re-download. | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:00:14","event":"HTTP_REQ","state":"requesting","progress":10,"error_code":0,"part":1,"details":"HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64 | State: requesting | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part1.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 1 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+{"timestamp":"1970-01-01T00:02:20","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 1 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 1 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:20","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 2 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 2 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:20","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 3 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 3 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:29","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 1 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 1 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:29","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 2 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 2 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:29","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 3 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 3 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 1 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 1 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 2 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 2 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 3 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 3 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 1 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 1 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 2 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 2 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 3 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 3 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 1 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 1 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 2 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 2 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:30","event":"modbus_write","state":"idle","progress":10,"error_code":0,"part":1,"details":"Manual Modbus Write: Reg 3 = 0"}
+[OTA LOG] [modbus_write] Manual Modbus Write: Reg 3 = 0 | State: idle | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:02:34","event":"trigger","state":"error","progress":10,"error_code":0,"part":1,"details":"[ERR] OTA already running! Ignoring duplicate trigger."}
+[OTA LOG] [trigger] [ERR] OTA already running! Ignoring duplicate trigger. | State: error | Progress: 10% | Error: 0 | Part: 1

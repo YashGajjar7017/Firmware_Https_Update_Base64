@@ -48,7 +48,7 @@ const char index_html[] = R"rawhtml(
 
         .dashboard {
             width: 100%;
-            max-width: 1400px;
+            max-width: 100%;
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -1084,9 +1084,13 @@ const char index_html[] = R"rawhtml(
             
             // Render PSRAM
             if (data.psram_total > 0) {
-                const psramMB = (data.psram_total / (1024 * 1024)).toFixed(2);
-                document.getElementById('psramStatVal').innerText = `${psramMB} MB / ${psramMB} MB`;
-                document.getElementById('psramBar').style.width = '100%';
+                const psramTotalMB = (data.psram_total / (1024 * 1024)).toFixed(2);
+                const psramFree = typeof data.psram_free !== 'undefined' ? data.psram_free : data.psram_total;
+                const psramUsed = data.psram_total - psramFree;
+                const psramUsedMB = (psramUsed / (1024 * 1024)).toFixed(2);
+                document.getElementById('psramStatVal').innerText = `${psramUsedMB} MB / ${psramTotalMB} MB`;
+                const psramPct = Math.min(100, Math.round((psramUsed / data.psram_total) * 100));
+                document.getElementById('psramBar').style.width = `${psramPct}%`;
             } else {
                 document.getElementById('psramStatVal').innerText = 'Not Equipped';
                 document.getElementById('psramBar').style.width = '0%';

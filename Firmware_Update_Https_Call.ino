@@ -1108,12 +1108,12 @@ static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
     return true;
 }
 
-uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
+uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size, int part) {
     uint32_t fp = ftp.qftp_file_open(filename, 2, 0);
     if (fp == 0) {
         char err_msg[128];
         snprintf(err_msg, sizeof(err_msg), "[ERR %d] AT+QFOPEN failed for UFS:%s", OTA_ERR_FILE_OPEN, filename.c_str());
-        add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_OPEN, modbus_get_register(REG_CURRENT_PART), err_msg);
+        add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_OPEN, part, err_msg);
         Serial.println(err_msg);
         return 0;
     }
@@ -1123,7 +1123,7 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
     uint32_t file_offset = 0;
     int datasize = 1;
     uint32_t chunk_count = 0;
-    int current_part = modbus_get_register(REG_CURRENT_PART);
+    int current_part = part;
     uint32_t total_chunks = (fp_size + read_size - 1) / read_size;
     
     Serial.printf("[UFS_READ] Starting read of %u bytes in %u-byte chunks (%u total chunks)...\r\n",
@@ -1407,6 +1407,11 @@ static uint8_t trigger_firmware_update_flow() {
     String password = "password";
     uint8_t err_code = 0;
     
+    // Clear Modbus registers 1 to 20 at start of update
+    for (int r = 1; r <= 20; r++) {
+        modbus_set_register(r, 0);
+    }
+    
     modbus_set_error(ERR_NONE);
     modbus_set_status(STATUS_DOWNLOADING);
     
@@ -1589,7 +1594,7 @@ static uint8_t trigger_firmware_update_flow() {
         
         // Copy UFS file contents completely into PSRAM buffer
         size_t before_len = s_psram_binary_length;
-        err_code = read_ufs_file_to_psram(filename1, 2048); // 2KB chunks to stay within modem QCOM buffer
+        err_code = read_ufs_file_to_psram(filename1, 2048, part); // 2KB chunks to stay within modem QCOM buffer
         if (err_code == 0) {
             char rd_err[128];
             snprintf(rd_err, sizeof(rd_err),
@@ -1617,6 +1622,11 @@ static uint8_t trigger_firmware_update_flow() {
             UNLOCK_GSM();
             return 0;
         }
+        
+        // Explicitly mark this part as completed and stored in PSRAM
+        modbus_set_register(5 + (part - 1) * 5, 1); // Stored in PSRAM = 1 (Yes)
+        modbus_set_register(1 + (part - 1) * 5, (part - 1) * 10 + 9); // Status = Completed (9, 19, 29, 39)
+        modbus_set_register(3 + (part - 1) * 5, 100); // Progress = 100
         
         size_t after_len = s_psram_binary_length;
         if (part >= 1 && part <= FW_UPDATE_NUM_PARTS) {
@@ -1712,12 +1722,57 @@ static void handle_status() {
     snprintf(buf_reg_9, sizeof(buf_reg_9), "%.2f", getFloatValue(SPIFF_SET_BIT));
     snprintf(buf_reg_11, sizeof(buf_reg_11), "%.2f", getFloatValue(FP_SIZE));
     
+    int current_part = 1;
+    for (int p = 1; p <= 4; p++) {
+        uint16_t stat = modbus_get_register(1 + (p - 1) * 5);
+        if (stat != 0 && stat != (p - 1) * 10 + 9) { // not completed
+            current_part = p;
+            break;
+        }
+    }
+    
+    int overall_status = 0;
+    bool has_error = false;
+    bool has_flashing = false;
+    bool has_decompressing = false;
+    bool has_downloading = false;
+    bool all_completed = true;
+    
+    for (int p = 1; p <= 4; p++) {
+        uint16_t stat = modbus_get_register(1 + (p - 1) * 5);
+        int local_type = stat - (p - 1) * 10;
+        if (stat == 0) {
+            all_completed = false;
+        } else {
+            if (local_type == 7) has_error = true;
+            else if (local_type == 5) has_flashing = true;
+            else if (local_type == 3) has_decompressing = true;
+            else if (local_type == 1) has_downloading = true;
+            if (local_type != 9) all_completed = false;
+        }
+    }
+    
+    if (has_error) overall_status = 5;
+    else if (all_completed) overall_status = 4;
+    else if (has_flashing) overall_status = 3;
+    else if (has_decompressing) overall_status = 2;
+    else if (has_downloading) overall_status = 1;
+    
+    int overall_progress = 0;
+    if (overall_status == 4) {
+        overall_progress = 100;
+    } else {
+        for (int p = 1; p <= 4; p++) {
+            overall_progress += modbus_get_register(3 + (p - 1) * 5) / 4;
+        }
+    }
+
     String json = "{\n";
     json += "  \"gprs_connected\": true,\n";
-    json += "  \"status\": " + String(modbus_get_register(REG_DOWNLOAD_STATUS)) + ",\n";
-    json += "  \"progress\": " + String(modbus_get_register(REG_PROGRESS_PERCENT)) + ",\n";
-    json += "  \"error\": " + String(modbus_get_register(REG_ERROR_CODE)) + ",\n";
-    json += "  \"part\": " + String(modbus_get_register(REG_CURRENT_PART)) + ",\n";
+    json += "  \"status\": " + String(overall_status) + ",\n";
+    json += "  \"progress\": " + String(overall_progress) + ",\n";
+    json += "  \"error\": " + String(has_error ? 3 : 0) + ",\n";
+    json += "  \"part\": " + String(current_part) + ",\n";
     json += "  \"float_reg_1\": " + String(buf_reg_1) + ",\n";
     json += "  \"float_reg_3\": " + String(buf_reg_3) + ",\n";
     json += "  \"float_reg_5\": " + String(buf_reg_5) + ",\n";
@@ -1975,15 +2030,18 @@ static void handle_esp32_storage() {
     uint32_t flash_size = ESP.getFlashChipSize();
     uint32_t free_heap = ESP.getFreeHeap();
     uint32_t psram_size = 0;
+    uint32_t psram_free = 0;
     if (psramFound()) {
         psram_size = ESP.getPsramSize();
+        psram_free = ESP.getFreePsram();
     }
     
     String json = "{\n";
     json += "  \"flash_total\": " + String(flash_size) + ",\n";
     json += "  \"flash_free\": " + String(flash_size / 2) + ",\n";
     json += "  \"heap_free\": " + String(free_heap) + ",\n";
-    json += "  \"psram_total\": " + String(psram_size) + "\n";
+    json += "  \"psram_total\": " + String(psram_size) + ",\n";
+    json += "  \"psram_free\": " + String(psram_free) + "\n";
     json += "}";
     server.send(200, "application/json", json);
     #else
@@ -1991,7 +2049,8 @@ static void handle_esp32_storage() {
                   "  \"flash_total\": 4194304,\n"
                   "  \"flash_free\": 2097152,\n"
                   "  \"heap_free\": 285430,\n"
-                  "  \"psram_total\": 4194304\n"
+                  "  \"psram_total\": 4194304,\n"
+                  "  \"psram_free\": 2097152\n"
                   "}";
     server.send(200, "application/json", json);
     #endif
