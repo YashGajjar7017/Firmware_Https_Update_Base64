@@ -978,6 +978,11 @@ uint8_t qftp::qftp_file_seek(int handle, int offset, uint8_t mode) {
 static uint8_t* s_psram_base64_buffer = NULL;
 static size_t s_psram_base64_capacity = 0;
 static size_t s_psram_base64_length = 0;
+
+static uint8_t* s_psram_binary_buffer = NULL;
+static size_t s_psram_binary_capacity = 0;
+static size_t s_psram_binary_length = 0;
+
 static size_t s_psram_part_sizes[FW_UPDATE_NUM_PARTS] = {0};
 
 static void clean_psram_buffer() {
@@ -991,16 +996,92 @@ static void clean_psram_buffer() {
     }
     s_psram_base64_capacity = 0;
     s_psram_base64_length = 0;
+
+    if (s_psram_binary_buffer != NULL) {
+        #ifdef ESP_PLATFORM
+        heap_caps_free(s_psram_binary_buffer);
+        #else
+        free(s_psram_binary_buffer);
+        #endif
+        s_psram_binary_buffer = NULL;
+    }
+    s_psram_binary_capacity = 0;
+    s_psram_binary_length = 0;
+
     for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
         s_psram_part_sizes[i] = 0;
     }
+}
+
+static bool is_chunk_valid_base64(const uint8_t* buf, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        uint8_t c = buf[i];
+        bool valid = (c >= 'A' && c <= 'Z') ||
+                     (c >= 'a' && c <= 'z') ||
+                     (c >= '0' && c <= '9') ||
+                     c == '+' || c == '/' || c == '=' ||
+                     c == '\r' || c == '\n' || c == ' ' || c == '\t';
+        if (!valid) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool decode_and_append_part_to_binary(int part_num) {
+    if (s_psram_base64_length == 0) return true;
+    
+    // Estimate maximum binary size: 3/4 of base64 size plus safety margin
+    size_t estimate = (s_psram_base64_length * 3) / 4 + 4;
+    
+    if (s_psram_binary_length + estimate > s_psram_binary_capacity) {
+        size_t new_cap = s_psram_binary_capacity == 0 ? 1024 * 1024 : s_psram_binary_capacity;
+        while (s_psram_binary_length + estimate > new_cap) {
+            new_cap += 512 * 1024;
+        }
+        #ifdef ESP_PLATFORM
+        uint8_t* new_buf = NULL;
+        if (psramFound()) {
+            new_buf = (uint8_t*)heap_caps_realloc(s_psram_binary_buffer, new_cap, MALLOC_CAP_SPIRAM);
+        } else {
+            new_buf = (uint8_t*)realloc(s_psram_binary_buffer, new_cap);
+        }
+        #else
+        uint8_t* new_buf = (uint8_t*)realloc(s_psram_binary_buffer, new_cap);
+        #endif
+        if (new_buf == NULL) {
+            Serial.println("[ERR] PSRAM binary buffer reallocation failed!");
+            return false;
+        }
+        s_psram_binary_buffer = new_buf;
+        s_psram_binary_capacity = new_cap;
+    }
+    
+    size_t decodedLen = 0;
+    int ret = mbedtls_base64_decode(
+        s_psram_binary_buffer + s_psram_binary_length,
+        s_psram_binary_capacity - s_psram_binary_length,
+        &decodedLen,
+        (const unsigned char*)s_psram_base64_buffer,
+        s_psram_base64_length
+    );
+    
+    if (ret != 0) {
+        Serial.printf("[ERR] Base64 decode failed for Part %d with code %d\r\n", part_num, ret);
+        return false;
+    }
+    
+    s_psram_binary_length += decodedLen;
+    Serial.printf("[B64_DECODE] Part %d decoded successfully. Decoded size: %u bytes. Total binary size: %u bytes.\r\n",
+                  part_num, (uint32_t)decodedLen, (uint32_t)s_psram_binary_length);
+    return true;
 }
 
 static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
     if (s_psram_base64_length + len > s_psram_base64_capacity) {
         size_t new_capacity = s_psram_base64_capacity == 0 ? 1024 * 1024 : s_psram_base64_capacity;
         while (s_psram_base64_length + len > new_capacity) {
-            new_capacity += 512 * 1024; // grow by 512 KB
+            new_capacity += 512 * 1024;
         }
         
         #ifdef ESP_PLATFORM
@@ -1082,7 +1163,23 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
                 add_log("UFS_ERR", "retrying", 0, OTA_ERR_FILE_READ_RETRY, current_part, retry_msg);
                 Serial.println(retry_msg);
                 ftp.qftp_file_seek(fp, encodedOffset, 0);
-                delay(10);
+                delay(50);
+                continue;
+            }
+            
+            // Check for UART corruption / noise in the read chunk
+            if (!is_chunk_valid_base64(buf1, datasize)) {
+                retry++;
+                char corrupt_msg[128];
+                snprintf(corrupt_msg, sizeof(corrupt_msg),
+                         "[WARN] UART noise/corruption detected in Part %d chunk at offset %u. Retrying %d/%d...",
+                         current_part, encodedOffset, retry, MAX_RETRY1);
+                add_log("UART_ERR", "retrying", 0, OTA_ERR_FILE_READ_RETRY, current_part, corrupt_msg);
+                Serial.println(corrupt_msg);
+                
+                // Seek back to start of this chunk to reread it
+                ftp.qftp_file_seek(fp, encodedOffset, 0);
+                delay(50); // wait for serial buffer/noise to clear
                 continue;
             }
             
@@ -1111,7 +1208,9 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
             // Feed the watchdog every chunk — prevents TWDT restart during 40+ second reads
             FEED_WDT();
             // Yield to FreeRTOS scheduler so WiFi / WebServer tasks stay alive
+            #ifdef ESP_PLATFORM
             vTaskDelay(1);
+            #endif
             
             // Update offset indicator register
             setFloatValue(SPIFF_SET_BIT, file_offset);
@@ -1119,7 +1218,6 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
             // Print ASCII progress bar to Serial every 16 chunks (~32KB)
             if (chunk_count % 16 == 0 || file_offset >= fp_size) {
                 uint32_t pct = (fp_size > 0) ? (file_offset * 100UL / fp_size) : 100;
-                // Build bar: 40 chars wide
                 const int BAR_WIDTH = 40;
                 int filled = (int)(pct * BAR_WIDTH / 100);
                 char bar[BAR_WIDTH + 8];
@@ -1141,7 +1239,7 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
         if (!success) {
             char err_msg[128];
             snprintf(err_msg, sizeof(err_msg),
-                     "[ERR %d] Max retries (%d) exceeded at offset %u for Part %d",
+                     "[ERR %d] Max retries (%d) exceeded or UART corrupted at offset %u for Part %d",
                      OTA_ERR_FILE_READ, MAX_RETRY1, encodedOffset, current_part);
             add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_READ, current_part, err_msg);
             Serial.println(err_msg);
@@ -1239,27 +1337,18 @@ static size_t sanitize_psram_base64() {
     return stripped;
 }
 
-uint8_t decode_and_flash_psram() {
-    add_log("ota_flash", "decoding", 0, 0, 0, "All base64 files loaded into PSRAM. Starting decode & OTA flash...");
-    modbus_set_status(STATUS_DECODING);
+uint8_t flash_binary_from_psram() {
+    add_log("ota_flash", "flashing", 0, 0, 0, "Starting ESP32 OTA flashing from PSRAM binary buffer...");
+    modbus_set_status(STATUS_FLASHING);
     setFloatValue(FW_DOWNLOAD_PROGRESS, 10.0f);
     
-    // ── Step 1: Sanitize ────────────────────────────────────────────────────
-    // Strip \r \n \0 stray control chars and inter-part '=' padding.
-    // This is the fix for -44 (MBEDTLS_ERR_BASE64_INVALID_CHARACTER) caused
-    // by lone \r characters in the line-wrapped .b64 files AND by '=' padding
-    // in the middle of the concatenated multi-part stream.
-    size_t stripped_bytes = sanitize_psram_base64();
-    if (s_psram_base64_length == 0) {
-        add_log("ota_flash", "error", 0, OTA_ERR_B64_DECODE, 0,
-                "[ERR] PSRAM buffer empty after sanitization! Cannot decode.");
+    if (s_psram_binary_length == 0 || s_psram_binary_buffer == NULL) {
+        add_log("ota_flash", "error", 0, OTA_ERR_UPDATE_WRITE, 0, "[ERR] Binary buffer is empty!");
         return 0;
     }
-    Serial.printf("[B64_CLEAN] After sanitize: %u usable base64 chars (%u stripped)\r\n",
-                  (uint32_t)s_psram_base64_length, (uint32_t)stripped_bytes);
-
+    
     #ifdef ESP_PLATFORM
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+    if (!Update.begin(s_psram_binary_length)) {
         setFloatValue(ERROR4, 7);
         Update.printError(Serial);
         add_log("ota_flash", "error", 0, OTA_ERR_UPDATE_BEGIN, 0, "[ERR] Failed to initialize OTA partition!");
@@ -1268,138 +1357,40 @@ uint8_t decode_and_flash_psram() {
     #else
     Update.begin(108);
     #endif
-
-    static uint8_t decode_temp_buf[8192];
-    size_t processed_b64 = 0;
+    
+    size_t processed_bin = 0;
     finalsize = 0;
     
-    while (processed_b64 < s_psram_base64_length) {
-        size_t chunk_chars = 6144;
-        if (processed_b64 + chunk_chars > s_psram_base64_length) {
-            chunk_chars = s_psram_base64_length - processed_b64;
+    while (processed_bin < s_psram_binary_length) {
+        size_t chunk_size = 4096;
+        if (processed_bin + chunk_size > s_psram_binary_length) {
+            chunk_size = s_psram_binary_length - processed_bin;
         }
         
-        if (chunk_chars == 0) {
-            break;
-        }
+        if (chunk_size == 0) break;
         
-        size_t decodedLen = 0;
-        int ret = mbedtls_base64_decode(
-            decode_temp_buf,
-            sizeof(decode_temp_buf),
-            &decodedLen,
-            (const unsigned char*)(s_psram_base64_buffer + processed_b64),
-            chunk_chars
-        );
-        
-        if (ret != 0) {
-            // ── Detailed base64 decode failure diagnostic ────────────────────
-            // Scan the failing chunk to find the first invalid character
-            const uint8_t* fchunk = s_psram_base64_buffer + processed_b64;
-            uint8_t  bad_char    = 0;
-            size_t   bad_offset  = 0;
-            bool     found_bad   = false;
-            for (size_t ci = 0; ci < chunk_chars; ci++) {
-                uint8_t ch = fchunk[ci];
-                bool is_valid = (ch >= 'A' && ch <= 'Z') ||
-                                (ch >= 'a' && ch <= 'z') ||
-                                (ch >= '0' && ch <= '9') ||
-                                ch == '+' || ch == '/' || ch == '=';
-                if (!is_valid) {
-                    bad_char   = ch;
-                    bad_offset = ci;
-                    found_bad  = true;
-                    break;
-                }
-            }
-            
-            // Determine which part this offset falls in
-            size_t part_boundary = 0;
-            int    bad_part      = 0;
-            for (int pi = 0; pi < FW_UPDATE_NUM_PARTS; pi++) {
-                part_boundary += s_psram_part_sizes[pi];
-                if (processed_b64 < part_boundary) {
-                    bad_part = pi + 1;
-                    break;
-                }
-            }
-            
-            Serial.printf("[B64_ERR] Decode FAILED: code=%d, chunk_offset=%u, total_offset=%u\r\n",
-                          ret, (uint32_t)processed_b64, (uint32_t)processed_b64);
-            if (found_bad) {
-                Serial.printf("[B64_ERR] First invalid char: 0x%02X ('%c') at chunk+%u (global %u) in Part %d\r\n",
-                              bad_char,
-                              (bad_char >= 0x20 && bad_char < 0x7F) ? (char)bad_char : '?',
-                              (uint32_t)bad_offset,
-                              (uint32_t)(processed_b64 + bad_offset),
-                              bad_part);
-                // Print 8 bytes of hex context around the bad char
-                size_t ctx_start = (bad_offset >= 8) ? bad_offset - 8 : 0;
-                Serial.printf("[B64_ERR] Context (hex): ");
-                for (size_t ci = ctx_start; ci < bad_offset + 8 && ci < chunk_chars; ci++) {
-                    if (ci == bad_offset) Serial.print("[>");
-                    Serial.printf("%02X ", fchunk[ci]);
-                    if (ci == bad_offset) Serial.print("<] ");
-                }
-                Serial.println();
-            } else {
-                Serial.printf("[B64_ERR] No single invalid char found — possible length/padding issue.\r\n");
-            }
-            
-            // Also print first 60 printable chars of the chunk
-            char snippet[65] = {0};
-            size_t sn = 0;
-            for (size_t ci = 0; ci < chunk_chars && sn < 60; ci++) {
-                uint8_t ch = fchunk[ci];
-                if (ch >= 0x20 && ch < 0x7F) snippet[sn++] = (char)ch;
-                else { snippet[sn++] = '['; snippet[sn++] = '?'; snippet[sn++] = ']'; }
-                if (sn >= 60) break;
-            }
-            snippet[sn] = '\0';
-            Serial.printf("[B64_ERR] Printable chunk start: %s\r\n", snippet);
-            
-            char err_details[256];
-            if (found_bad) {
-                snprintf(err_details, sizeof(err_details),
-                         "[ERR %d] B64 decode fail at global offset %u: invalid char 0x%02X at chunk+%u (Part %d)",
-                         OTA_ERR_B64_DECODE, (uint32_t)processed_b64, bad_char, (uint32_t)bad_offset, bad_part);
-            } else {
-                snprintf(err_details, sizeof(err_details),
-                         "[ERR %d] B64 decode fail at global offset %u: code=%d, no single invalid char found",
-                         OTA_ERR_B64_DECODE, (uint32_t)processed_b64, ret);
-            }
-            add_log("ota_flash", "error", 0, OTA_ERR_B64_DECODE, bad_part, err_details);
-            
-            setFloatValue(ERROR4, 3);
-            #ifdef ESP_PLATFORM
-            Update.abort();
-            #endif
-            return 0;
-        }
-        
-        if (Update.write(decode_temp_buf, decodedLen) != decodedLen) {
+        if (Update.write(s_psram_binary_buffer + processed_bin, chunk_size) != chunk_size) {
             Serial.println("OTA Write chunk failed!");
             #ifdef ESP_PLATFORM
             Update.printError(Serial);
             #endif
-            add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "OTA writing chunk from PSRAM failed!");
+            add_log("ota_flash", "error", 0, OTA_ERR_UPDATE_WRITE, 0, "OTA writing chunk from PSRAM failed!");
             setFloatValue(ERROR4, 5);
             return 0;
         }
         
-        processed_b64 += chunk_chars;
-        finalsize += decodedLen;
+        processed_bin += chunk_size;
+        finalsize += chunk_size;
         
-        // Progress tracking for flashing (10.0f is starting progress of flashing, let's scale it to 17.0f)
-        float flash_progress = 10.0f + ((float)processed_b64 / s_psram_base64_length) * 7.0f;
+        float flash_progress = 10.0f + ((float)processed_bin / s_psram_binary_length) * 7.0f;
         setFloatValue(FW_DOWNLOAD_PROGRESS, flash_progress);
         
         char log_details[256];
-        snprintf(log_details, sizeof(log_details), "Flashing PSRAM: decoded %d binary bytes. Total: %d bytes.", 
-                 (int)decodedLen, (int)finalsize);
-        add_log("ota_flash", "flashing", (int)((processed_b64 * 100) / s_psram_base64_length), 0, 0, log_details);
+        snprintf(log_details, sizeof(log_details), "Flashing: wrote %u of %u binary bytes.", 
+                 (uint32_t)processed_bin, (uint32_t)s_psram_binary_length);
+        add_log("ota_flash", "flashing", (int)((processed_bin * 100) / s_psram_binary_length), 0, 0, log_details);
         
-        delay(5);
+        delay(2);
     }
     
     return 1;
@@ -1425,34 +1416,47 @@ static uint8_t trigger_firmware_update_flow() {
     
     clean_psram_buffer(); // clear old buffers
     
-    // Pre-allocate the full PSRAM buffer up front to avoid mid-read realloc
-    // which requires 2.5x memory simultaneously (old + new block) and causes crashes.
-    // 500KB per part is a safe upper bound for 476856-byte files.
+    // Pre-allocate the temporary base64 buffer (500KB) and the accumulator binary buffer (1.5MB)
     #ifdef ESP_PLATFORM
     {
         uint32_t total_parts = (uint32_t)getFloatValue(FW_TOTAL_PARTS);
-        size_t prealloc_size = total_parts * 500000UL;
-        uint8_t* pre_buf = NULL;
+        size_t b64_alloc_size = 500000UL;
+        size_t bin_alloc_size = total_parts * 375000UL;
+        
+        uint8_t* b64_buf = NULL;
+        uint8_t* bin_buf = NULL;
+        
         if (psramFound()) {
-            pre_buf = (uint8_t*)heap_caps_malloc(prealloc_size, MALLOC_CAP_SPIRAM);
+            b64_buf = (uint8_t*)heap_caps_malloc(b64_alloc_size, MALLOC_CAP_SPIRAM);
+            bin_buf = (uint8_t*)heap_caps_malloc(bin_alloc_size, MALLOC_CAP_SPIRAM);
         } else {
-            pre_buf = (uint8_t*)malloc(prealloc_size);
+            b64_buf = (uint8_t*)malloc(b64_alloc_size);
+            bin_buf = (uint8_t*)malloc(bin_alloc_size);
         }
-        if (pre_buf != NULL) {
-            s_psram_base64_buffer = pre_buf;
-            s_psram_base64_capacity = prealloc_size;
+        
+        if (b64_buf != NULL && bin_buf != NULL) {
+            s_psram_base64_buffer = b64_buf;
+            s_psram_base64_capacity = b64_alloc_size;
             s_psram_base64_length = 0;
-            char alloc_log[128];
+            
+            s_psram_binary_buffer = bin_buf;
+            s_psram_binary_capacity = bin_alloc_size;
+            s_psram_binary_length = 0;
+            
+            char alloc_log[256];
             snprintf(alloc_log, sizeof(alloc_log),
-                     "PSRAM pre-alloc OK: %u bytes (%.1f KB) for %u parts",
-                     (uint32_t)prealloc_size, prealloc_size / 1024.0f, total_parts);
+                     "PSRAM allocated: Base64 Temp %u bytes, Binary Accumulator %u bytes",
+                     (uint32_t)b64_alloc_size, (uint32_t)bin_alloc_size);
             add_log("PSRAM_ALLOC", "ready", 2, OTA_ERR_NONE, 0, alloc_log);
             Serial.printf("[PSRAM] %s\r\n", alloc_log);
         } else {
+            if (b64_buf) heap_caps_free(b64_buf);
+            if (bin_buf) heap_caps_free(bin_buf);
+            
             char err_log[128];
             snprintf(err_log, sizeof(err_log),
-                     "[ERR %d] PSRAM pre-alloc FAILED for %u bytes! Free PSRAM: %u bytes",
-                     OTA_ERR_PSRAM_ALLOC, (uint32_t)prealloc_size, (uint32_t)ESP.getFreePsram());
+                     "[ERR %d] PSRAM allocation failed! Free PSRAM: %u bytes",
+                     OTA_ERR_PSRAM_ALLOC, (uint32_t)ESP.getFreePsram());
             add_log("PSRAM_ERR", "error", 0, OTA_ERR_PSRAM_ALLOC, 0, err_log);
             Serial.println(err_log);
             modbus_set_status(STATUS_ERROR);
@@ -1460,6 +1464,15 @@ static uint8_t trigger_firmware_update_flow() {
             return 0;
         }
     }
+    #else
+    // PC Simulator allocation
+    s_psram_base64_buffer = (uint8_t*)malloc(500000UL);
+    s_psram_base64_capacity = 500000UL;
+    s_psram_base64_length = 0;
+    
+    s_psram_binary_buffer = (uint8_t*)malloc(1500000UL);
+    s_psram_binary_capacity = 1500000UL;
+    s_psram_binary_length = 0;
     #endif
     
     setFloatValue(FW_DOWNLOAD_PROGRESS, 2);
@@ -1571,8 +1584,11 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(FP_SIZE, parsed_size);
         #endif
         
+        // Reset base64 buffer length for current part
+        s_psram_base64_length = 0;
+        
         // Copy UFS file contents completely into PSRAM buffer
-        size_t before_len = s_psram_base64_length;
+        size_t before_len = s_psram_binary_length;
         err_code = read_ufs_file_to_psram(filename1, 2048); // 2KB chunks to stay within modem QCOM buffer
         if (err_code == 0) {
             char rd_err[128];
@@ -1586,7 +1602,23 @@ static uint8_t trigger_firmware_update_flow() {
             UNLOCK_GSM();
             return 0;
         }
-        size_t after_len = s_psram_base64_length;
+        
+        // Clean any whitespace / lines and fix trailing padding for this part
+        sanitize_psram_base64();
+        
+        // Decode this part immediately and append to binary accumulator
+        if (!decode_and_append_part_to_binary(part)) {
+            char dec_err[128];
+            snprintf(dec_err, sizeof(dec_err), "[ERR %d] Base64 decode failed for Part %d immediately!", OTA_ERR_B64_DECODE, part);
+            add_log("DEC_ERR", "error", 0, OTA_ERR_B64_DECODE, part, dec_err);
+            Serial.println(dec_err);
+            setFloatValue(FILE_UUID, 0);
+            clean_psram_buffer();
+            UNLOCK_GSM();
+            return 0;
+        }
+        
+        size_t after_len = s_psram_binary_length;
         if (part >= 1 && part <= FW_UPDATE_NUM_PARTS) {
             s_psram_part_sizes[part - 1] = after_len - before_len;
         }
@@ -1618,15 +1650,15 @@ static uint8_t trigger_firmware_update_flow() {
     resetWatchdog();
     delay(100);
     
-    // Now start decryption/decoding and flashing from PSRAM buffer to OTA
-    err_code = decode_and_flash_psram();
+    // Now start flashing from PSRAM binary accumulator buffer to OTA partition
+    err_code = flash_binary_from_psram();
     if (err_code == 0) {
         clean_psram_buffer();
         return 0;
     }
     
     char details[128];
-    snprintf(details, sizeof(details), "Decoded firmware file complete. Total binary size: %u bytes", finalsize);
+    snprintf(details, sizeof(details), "Flashing complete. Total binary size: %u bytes", (uint32_t)s_psram_binary_length);
     add_log("validation", "checking", 90, 0, FW_UPDATE_NUM_PARTS, details);
     modbus_set_status(STATUS_FLASHING);
     
@@ -1983,6 +2015,135 @@ static void handle_esp32_storage() {
 #endif
 
 #ifdef ESP_PLATFORM
+#include <WiFi.h>
+
+static WiFiServer s_modbus_server(502);
+
+static void modbus_tcp_task(void* pvParameters) {
+    (void)pvParameters;
+    s_modbus_server.begin();
+    Serial.println("[Modbus TCP] Server started on port 502");
+    
+    uint8_t buffer[260];
+    
+    while (true) {
+        WiFiClient client = s_modbus_server.available();
+        if (client) {
+            Serial.println("[Modbus TCP] Client connected");
+            while (client.connected()) {
+                if (client.available() >= 12) {
+                    int read_len = client.read(buffer, 12);
+                    if (read_len >= 12) {
+                        uint16_t transaction_id = (buffer[0] << 8) | buffer[1];
+                        uint16_t protocol_id = (buffer[2] << 8) | buffer[3];
+                        uint16_t length = (buffer[4] << 8) | buffer[5];
+                        uint8_t unit_id = buffer[6];
+                        uint8_t function_code = buffer[7];
+                        
+                        if (protocol_id == 0 && length >= 6) {
+                            if (function_code == 3) { // Read Holding Registers
+                                uint16_t start_addr = (buffer[8] << 8) | buffer[9];
+                                uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
+                                
+                                if (reg_qty > 125) reg_qty = 125;
+                                
+                                uint8_t resp_len = 3 + 2 * reg_qty; // unit_id + fc + byte_count + data
+                                uint8_t resp[260];
+                                
+                                resp[0] = buffer[0];
+                                resp[1] = buffer[1];
+                                resp[2] = buffer[2];
+                                resp[3] = buffer[3];
+                                resp[4] = (resp_len >> 8) & 0xFF;
+                                resp[5] = resp_len & 0xFF;
+                                resp[6] = unit_id;
+                                
+                                resp[7] = 3;
+                                resp[8] = 2 * reg_qty;
+                                
+                                for (int i = 0; i < reg_qty; i++) {
+                                    uint16_t reg_val = modbus_get_register(start_addr + i);
+                                    resp[9 + 2 * i] = (reg_val >> 8) & 0xFF;
+                                    resp[10 + 2 * i] = reg_val & 0xFF;
+                                }
+                                
+                                client.write(resp, 7 + resp_len);
+                            }
+                            else if (function_code == 6) { // Write Single Register
+                                uint16_t reg_addr = (buffer[8] << 8) | buffer[9];
+                                uint16_t reg_val = (buffer[10] << 8) | buffer[11];
+                                
+                                modbus_set_register(reg_addr, reg_val);
+                                
+                                uint8_t resp_len = 6;
+                                uint8_t resp[12];
+                                resp[0] = buffer[0];
+                                resp[1] = buffer[1];
+                                resp[2] = buffer[2];
+                                resp[3] = buffer[3];
+                                resp[4] = 0;
+                                resp[5] = resp_len;
+                                resp[6] = unit_id;
+                                resp[7] = 6;
+                                resp[8] = buffer[8];
+                                resp[9] = buffer[9];
+                                resp[10] = buffer[10];
+                                resp[11] = buffer[11];
+                                
+                                client.write(resp, 12);
+                            }
+                            else if (function_code == 16) { // Write Multiple Registers
+                                uint16_t start_addr = (buffer[8] << 8) | buffer[9];
+                                uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
+                                uint8_t byte_count = buffer[12];
+                                
+                                int remaining = byte_count + 1;
+                                int read_extra = 0;
+                                while (read_extra < remaining && client.connected()) {
+                                    if (client.available() > 0) {
+                                        buffer[12 + read_extra] = client.read();
+                                        read_extra++;
+                                    } else {
+                                        delay(1);
+                                    }
+                                }
+                                
+                                if (read_extra == remaining) {
+                                    for (int i = 0; i < reg_qty; i++) {
+                                        uint16_t reg_val = (buffer[13 + 2 * i] << 8) | buffer[14 + 2 * i];
+                                        modbus_set_register(start_addr + i, reg_val);
+                                    }
+                                    
+                                    uint8_t resp_len = 6;
+                                    uint8_t resp[12];
+                                    resp[0] = buffer[0];
+                                    resp[1] = buffer[1];
+                                    resp[2] = buffer[2];
+                                    resp[3] = buffer[3];
+                                    resp[4] = 0;
+                                    resp[5] = resp_len;
+                                    resp[6] = unit_id;
+                                    resp[7] = 16;
+                                    resp[8] = buffer[8];
+                                    resp[9] = buffer[9];
+                                    resp[10] = buffer[10];
+                                    resp[11] = buffer[11];
+                                    
+                                    client.write(resp, 12);
+                                }
+                            }
+                        }
+                    }
+                }
+                delay(2);
+            }
+            client.stop();
+            Serial.println("[Modbus TCP] Client disconnected");
+        }
+        delay(10);
+    }
+}
+
 extern "C" {
 void __attribute__((weak)) readholdingregister_modbus() {}
 void __attribute__((weak)) writeholdingregister_modbus() {}
@@ -2032,8 +2193,11 @@ void setup() {
     server.on("/api/list_modem_files", HTTP_GET, handle_list_modem_files);
     server.on("/api/list_esp32_storage", HTTP_GET, handle_esp32_storage);
     server.begin();
-    
     Serial.println("HTTP Server started on Port 80");
+    
+    #ifdef ESP_PLATFORM
+    xTaskCreate(modbus_tcp_task, "modbus_tcp_task", 4096, NULL, 4, NULL);
+    #endif
 }
 
 void loop() {

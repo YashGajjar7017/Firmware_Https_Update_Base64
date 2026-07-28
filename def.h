@@ -1,36 +1,32 @@
 #include "Firmware_Update_Https_Call.ino"
 
-#define MODBUS_DEvice_Address 10
-#define STATUS_IDLE 0
-#define STATUS_DOWNLOADING 1
-#define STATUS_DECODING 2
-#define STATUS_FLASHING 3
-#define STATUS_COMPLETE 4
-#define STATUS_ERROR 5
+// Base64_File1_Status
+#define Base64_File1_Downloading 1
+#define Base64_File1_Decompressing 2
+#define Base64_File1_Flashing 3
+#define Base64_File1_Error 4
+#define Base64_File1_Completed 5
 
-#define ERR_NONE 0
-#define ERR_GPRS_FAIL 1
-#define ERR_HTTP_FAIL 2
-#define ERR_BASE64_DECODE 3
-#define ERR_MEMORY_PSRAM 4
-#define ERR_OTA_FLASH 5
+// Base64_File2_Status
+#define Base64_File2_Downloading 6
+#define Base64_File2_Decompressing 7
+#define Base64_File2_Flashing 8
+#define Base64_File2_Error 9
+#define Base64_File2_Completed 10
 
-#define File1Download 20
-#define File2Download 21
-#define File3Download 22
-#define File4Download 23
+// Base64_File3_Status
+#define Base64_File3_Downloading 11
+#define Base64_File3_Decompressing 12
+#define Base64_File3_Flashing 13
+#define Base64_File3_Error 14
+#define Base64_File3_Completed 15
 
-#define REG_DOWNLOAD_STATUS 1
-#define REG_PROGRESS_PERCENT 2
-#define REG_ERROR_CODE 3
-#define REG_CURRENT_PART 4
-
-#define REG_FILE1_Download_COMPLETE 5
-#define REG_FILE2_Download_COMPLETE 6
-#define REG_FILE3_Download_COMPLETE 7
-#define REG_FILE4_Download_COMPLETE 8
-#define REG_DOWNLOAD_FINAL_SIZE_L 9
-#define REG_DOWNLOAD_FINAL_SIZE_H 10
+// Base64_File4_Status
+#define Base64_File4_Downloading 16
+#define Base64_File4_Decompressing 17
+#define Base64_File4_Flashing 18
+#define Base64_File4_Error 19
+#define Base64_File4_Completed 20
 
 void readholdingregister_modbus();
 void writeholdingregister_modbus();
