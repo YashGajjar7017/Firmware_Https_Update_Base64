@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 // Configuration parameters
-#define FW_UPDATE_NUM_PARTS         4
+#define FW_UPDATE_NUM_PARTS         8
 #define FW_UPDATE_INITIAL_BUF_SIZE  (256 * 1024) // 256 KB initial PSRAM buffer
 #define FW_UPDATE_BUFFER_GROW_STEP  (256 * 1024) // Grow by 256 KB increments
 

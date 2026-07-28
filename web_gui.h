@@ -48,7 +48,7 @@ const char index_html[] = R"rawhtml(
 
         .dashboard {
             width: 100%;
-            max-width: 1600px;
+            max-width: 1400px;
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -59,24 +59,23 @@ const char index_html[] = R"rawhtml(
             animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Two-column outer layout: panels left | console right */
+        /* Stacked outer layout: panels top | console bottom */
         .app-layout {
             display: flex;
+            flex-direction: column;
             gap: 22px;
-            align-items: flex-start;
         }
 
         .panels-area {
-            flex: 1 1 0;
-            min-width: 0;
+            width: 100%;
         }
 
-        /* Right console sidebar */
+        /* Bottom console sidebar */
         .console-sidebar {
-            width: 380px;
-            flex-shrink: 0;
+            width: 100%;
             display: flex;
             flex-direction: column;
+            margin-top: 10px;
         }
 
         @keyframes fadeIn {
@@ -237,8 +236,18 @@ const char index_html[] = R"rawhtml(
         /* Part indicators */
         .parts-tracker {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 12px;
+        }
+
+        .part-node.special-node {
+            background: rgba(168, 85, 247, 0.03);
+            border-color: rgba(168, 85, 247, 0.15);
+        }
+
+        .part-node.special-node.completed {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
         .part-node {
@@ -640,6 +649,30 @@ const char index_html[] = R"rawhtml(
                             <span class="part-num">Part 4</span>
                             <div class="part-dot"></div>
                         </div>
+                        <div id="part5" class="part-node">
+                            <span class="part-num">Part 5</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part6" class="part-node">
+                            <span class="part-num">Part 6</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part7" class="part-node">
+                            <span class="part-num">Part 7</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="part8" class="part-node">
+                            <span class="part-num">Part 8</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="partAll" class="part-node special-node">
+                            <span class="part-num">All Chunks</span>
+                            <div class="part-dot"></div>
+                        </div>
+                        <div id="partFlash" class="part-node special-node">
+                            <span class="part-num">Flashed</span>
+                            <div class="part-dot"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -651,21 +684,39 @@ const char index_html[] = R"rawhtml(
 
             <div class="panel">
                 <div class="panel-title">Firmware Configuration</div>
-                <div class="input-group">
-                    <label for="fwUrlInput1">Part 1 URL</label>
-                    <input type="text" id="fwUrlInput1" class="text-input" placeholder="http://64.251.10.159/otafw_part1.b64" value="http://64.251.10.159/otafw_part1.b64">
-                </div>
-                <div class="input-group">
-                    <label for="fwUrlInput2">Part 2 URL</label>
-                    <input type="text" id="fwUrlInput2" class="text-input" placeholder="http://64.251.10.159/otafw_part2.b64" value="http://64.251.10.159/otafw_part2.b64">
-                </div>
-                <div class="input-group">
-                    <label for="fwUrlInput3">Part 3 URL</label>
-                    <input type="text" id="fwUrlInput3" class="text-input" placeholder="http://64.251.10.159/otafw_part3.b64" value="http://64.251.10.159/otafw_part3.b64">
-                </div>
-                <div class="input-group">
-                    <label for="fwUrlInput4">Part 4 URL</label>
-                    <input type="text" id="fwUrlInput4" class="text-input" placeholder="http://64.251.10.159/otafw_part4.b64" value="http://64.251.10.159/otafw_part4.b64">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput1">Part 1 URL</label>
+                        <input type="text" id="fwUrlInput1" class="text-input" value="http://64.251.10.159/otafw_part1.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput2">Part 2 URL</label>
+                        <input type="text" id="fwUrlInput2" class="text-input" value="http://64.251.10.159/otafw_part2.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput3">Part 3 URL</label>
+                        <input type="text" id="fwUrlInput3" class="text-input" value="http://64.251.10.159/otafw_part3.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput4">Part 4 URL</label>
+                        <input type="text" id="fwUrlInput4" class="text-input" value="http://64.251.10.159/otafw_part4.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput5">Part 5 URL</label>
+                        <input type="text" id="fwUrlInput5" class="text-input" value="http://64.251.10.159/otafw_part5.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput6">Part 6 URL</label>
+                        <input type="text" id="fwUrlInput6" class="text-input" value="http://64.251.10.159/otafw_part6.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput7">Part 7 URL</label>
+                        <input type="text" id="fwUrlInput7" class="text-input" value="http://64.251.10.159/otafw_part7.b64">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label for="fwUrlInput8">Part 8 URL</label>
+                        <input type="text" id="fwUrlInput8" class="text-input" value="http://64.251.10.159/otafw_part8.b64">
+                    </div>
                 </div>
                 <button id="btnTrigger" class="btn-trigger" onclick="triggerOTA()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -677,23 +728,31 @@ const char index_html[] = R"rawhtml(
         <!-- Column 2: Modbus Telemetry & Overrides -->
                 <div>
             <div class="panel">
-                <div class="panel-title">Modbus Register Bindings</div>
+                <div class="panel-title">Modbus Register Bindings (TCP/IP Float32)</div>
                 <div class="register-list">
                     <div class="register-item">
-                        <span class="register-lbl">Holding Reg 1 (Status)</span>
-                        <span id="reg1" class="register-val">0</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 2 (Progress)</span>
-                        <span id="reg2" class="register-val">0%</span>
+                        <span class="register-lbl">Holding Reg 1 (Download Progress)</span>
+                        <span id="reg1" class="register-val">0.00</span>
                     </div>
                     <div class="register-item">
                         <span class="register-lbl">Holding Reg 3 (Error Code)</span>
-                        <span id="reg3" class="register-val">0</span>
+                        <span id="reg3" class="register-val">0.00</span>
                     </div>
                     <div class="register-item">
-                        <span class="register-lbl">Holding Reg 4 (Current Part)</span>
-                        <span id="reg4" class="register-val">0</span>
+                        <span class="register-lbl">Holding Reg 5 (Total Parts)</span>
+                        <span id="reg5" class="register-val">0.00</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 7 (File UUID)</span>
+                        <span id="reg7" class="register-val">0.00</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 9 (Part Offset / Bytes)</span>
+                        <span id="reg9" class="register-val">0.00</span>
+                    </div>
+                    <div class="register-item">
+                        <span class="register-lbl">Holding Reg 11 (Part Size / Bytes)</span>
+                        <span id="reg11" class="register-val">0.00</span>
                     </div>
                 </div>
             </div>
@@ -903,20 +962,54 @@ const char index_html[] = R"rawhtml(
             document.getElementById('progressVal').innerText = `${data.progress}%`;
             document.getElementById('progressBar').style.width = `${data.progress}%`;
 
-            // 3. Update Modbus labels
-            document.getElementById('reg1').innerText = data.status;
-            document.getElementById('reg2').innerText = `${data.progress}%`;
-            document.getElementById('reg3').innerText = data.error;
-            document.getElementById('reg4').innerText = data.part;
+            // 3. Update Modbus labels (Float registers 1, 3, 5, 7, 9, 11)
+            document.getElementById('reg1').innerText = Number(data.float_reg_1).toFixed(2);
+            document.getElementById('reg3').innerText = Number(data.float_reg_3).toFixed(2);
+            document.getElementById('reg5').innerText = Number(data.float_reg_5).toFixed(2);
+            document.getElementById('reg7').innerText = Number(data.float_reg_7).toFixed(2);
+            document.getElementById('reg9').innerText = Number(data.float_reg_9).toFixed(2);
+            document.getElementById('reg11').innerText = Number(data.float_reg_11).toFixed(2);
 
-            // 4. Update Part node visual status
-            for (let p = 1; p <= 4; p++) {
+            // 4. Update Part node visual status (8 parts)
+            for (let p = 1; p <= 8; p++) {
                 const node = document.getElementById(`part${p}`);
-                node.className = 'part-node';
-                if (data.part >= p && data.status > 1 && data.status !== 5) {
-                    node.classList.add('completed');
-                } else if (data.status === 1 && data.part === p) {
-                    node.classList.add('active');
+                if (node) {
+                    node.className = 'part-node';
+                    if (data.status !== 5) { // not in error state
+                        if (data.part > p) {
+                            node.classList.add('completed');
+                        } else if (data.part === p) {
+                            if (data.status === 1) { // downloading
+                                node.classList.add('active');
+                            } else if (data.status === 2 || data.status === 3 || data.status === 4) { // decoding / flashing / complete
+                                node.classList.add('completed');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update All Chunks node (partAll)
+            const nodeAll = document.getElementById('partAll');
+            if (nodeAll) {
+                nodeAll.className = 'part-node special-node';
+                if (data.status !== 5) {
+                    if (data.status === 3 || data.status === 4) {
+                        nodeAll.classList.add('completed');
+                    } else if (data.status === 2 && data.part === 8) {
+                        nodeAll.classList.add('active');
+                    }
+                }
+            }
+
+            // Update Flashed node (partFlash)
+            const nodeFlash = document.getElementById('partFlash');
+            if (nodeFlash) {
+                nodeFlash.className = 'part-node special-node';
+                if (data.status === 4) {
+                    nodeFlash.classList.add('completed');
+                } else if (data.status === 3) {
+                    nodeFlash.classList.add('active');
                 }
             }
 
@@ -1033,13 +1126,17 @@ const char index_html[] = R"rawhtml(
         const url2 = document.getElementById('fwUrlInput2').value;
         const url3 = document.getElementById('fwUrlInput3').value;
         const url4 = document.getElementById('fwUrlInput4').value;
+        const url5 = document.getElementById('fwUrlInput5').value;
+        const url6 = document.getElementById('fwUrlInput6').value;
+        const url7 = document.getElementById('fwUrlInput7').value;
+        const url8 = document.getElementById('fwUrlInput8').value;
         btn.setAttribute('disabled', 'true');
         clearConsole();
         logOffset = 0;
-        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence with 4 URLs.', 'info');
+        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence with 8 URLs.', 'info');
         
         try {
-            const query = `url1=${encodeURIComponent(url1)}&url2=${encodeURIComponent(url2)}&url3=${encodeURIComponent(url3)}&url4=${encodeURIComponent(url4)}`;
+            const query = `url1=${encodeURIComponent(url1)}&url2=${encodeURIComponent(url2)}&url3=${encodeURIComponent(url3)}&url4=${encodeURIComponent(url4)}&url5=${encodeURIComponent(url5)}&url6=${encodeURIComponent(url6)}&url7=${encodeURIComponent(url7)}&url8=${encodeURIComponent(url8)}`;
             const res = await fetch(`/api/trigger?${query}`, { method: 'POST' });
             if (!res.ok) throw new Error('API server rejected trigger request');
             appendLog(null, 'system', 'triggered', 0, 0, 0, 'OTA update process successfully spawned in background.', 'info');

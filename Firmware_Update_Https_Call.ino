@@ -67,11 +67,15 @@ static int s_log_count = 0;
 
 // Dynamic simulation parameters
 static const char* s_parts_payloads[FW_UPDATE_NUM_PARTS];
-static String s_custom_urls[4] = {
+static String s_custom_urls[FW_UPDATE_NUM_PARTS] = {
     "http://64.251.10.159/otafw_part1.b64",
     "http://64.251.10.159/otafw_part2.b64",
     "http://64.251.10.159/otafw_part3.b64",
-    "http://64.251.10.159/otafw_part4.b64"
+    "http://64.251.10.159/otafw_part4.b64",
+    "http://64.251.10.159/otafw_part5.b64",
+    "http://64.251.10.159/otafw_part6.b64",
+    "http://64.251.10.159/otafw_part7.b64",
+    "http://64.251.10.159/otafw_part8.b64"
 };
 static std::string s_parts_data[FW_UPDATE_NUM_PARTS]; // Persist downloaded parts in simulation
 
@@ -136,7 +140,11 @@ static void setFloatValue(int key, float val) {
                 modbus_set_progress(10);
             } else if (val >= 3) {
                 int part = ((int)val - 1) / 2;
-                modbus_set_progress(part * 25);
+                if ((int)val % 2 == 1) {
+                    modbus_set_progress(((part - 1) * 100 / FW_UPDATE_NUM_PARTS) + 5);
+                } else {
+                    modbus_set_progress(part * 100 / FW_UPDATE_NUM_PARTS);
+                }
             }
         } else if (key == ERROR4) {
             if (val != 0 && val != 9) { // 9 is success completion indicator
@@ -148,7 +156,7 @@ static void setFloatValue(int key, float val) {
 }
 
 static float getFloatValue(int key) {
-    if (key == FW_TOTAL_PARTS) return 4.0f;
+    if (key == FW_TOTAL_PARTS) return (float)FW_UPDATE_NUM_PARTS;
     if (key < 10) return s_float_registers[key];
     return 0.0f;
 }
@@ -509,7 +517,6 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
     char del_log[256];
     snprintf(del_log, sizeof(del_log), "Cleared old UFS file: UFS:%s before re-download.", url_filename.c_str());
     add_log("UFS_DEL", "cleanup", 0, 0, x, del_log);
-    module->sendCommand("AT+QFLST\r\n", "OK", 1000, 1);
 
     if (x >= 1 && x <= FW_UPDATE_NUM_PARTS) {
         char url_command1[512];
@@ -569,10 +576,17 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         if (!module->sendCommandOpt("AT+QHTTPGET=240\r\n", "+QHTTPGET: 0", 240000, 3, "+QHTTPGET: 0"))
             return 5;
         
+        // Parse actual download size from QHTTPGET response if possible
+        uint32_t download_size = 476856; // Default fallback
+        char* qhttp_ptr = strstr(module->buffer, "+QHTTPGET: 0,200,");
+        if (qhttp_ptr != NULL) {
+            download_size = (uint32_t)atol(qhttp_ptr + 17);
+        }
+
         // Log download complete with progress bar
         char prog_bar[64];
         char prog_msg[256];
-        make_progress_bar(prog_bar, sizeof(prog_bar), 476856, 476856);
+        make_progress_bar(prog_bar, sizeof(prog_bar), download_size, download_size);
         snprintf(prog_msg, sizeof(prog_msg), "Part %d HTTP Download Complete: %s", x, prog_bar);
         add_log("HTTP_PROG", "downloading", 100, 0, x, prog_msg);
         Serial.printf("[HTTP_PROG] Part %d %s\n", x, prog_bar);
@@ -616,7 +630,6 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
         Serial.printf("[HTTP_REQ] ACK: Part %d -> UFS:%s from %s\n", x, url_filename.c_str(), url_command1);
 
-        module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
         delay(10);
         return 0; // Success
         #endif
@@ -671,7 +684,7 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     #ifndef ESP_PLATFORM
     // Host PC Simulation Mode
     int current_part = modbus_get_register(REG_CURRENT_PART);
-    if (current_part < 1 || current_part > 4) current_part = 1;
+    if (current_part < 1 || current_part > FW_UPDATE_NUM_PARTS) current_part = 1;
     const char* part_payload = s_parts_payloads[current_part - 1];
     
     size_t part_len = strlen(part_payload);
@@ -693,7 +706,8 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     int length1;
     char cmd[100];
     sprintf(cmd, FTP_FILE_READ, handle, length);
-    if (module->sendCommandStd(cmd, "OK", 1000, 2)) {
+    // Increase timeout to 5000ms to allow secure reading/transmission over UART
+    if (module->sendCommand(cmd, "OK", 5000, 2)) {
         unsigned char *tcp = NULL;
         char len[8] = {0};
         uint8_t j = 0;
@@ -725,18 +739,11 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
 
 uint8_t qftp::qftp_file_seek(int handle, int offset, uint8_t mode) {
     char cmd[100];
-    sprintf(cmd, FTP_POSITION, handle);
-    module->sendCommand(cmd, "OK", 1000, 2);
-
     sprintf(cmd, FTP_FILE_SEEK, handle, offset, mode);
-    if (module->sendCommand(cmd, "OK", 1000, 2)) {
-        sprintf(cmd, FTP_POSITION, handle);
-        module->sendCommand(cmd, "OK", 1000, 2);
+    // Remove redundant AT+QFPOSITION commands and just execute seek
+    if (module->sendCommand(cmd, "OK", 2000, 2)) {
         return 1;
     }
-    
-    sprintf(cmd, FTP_POSITION, handle);
-    module->sendCommand(cmd, "OK", 1000, 2);
     return 0;
 }
 
@@ -816,7 +823,8 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
                 char log_details[256];
                 snprintf(log_details, sizeof(log_details), "Read chunk of %d base64 bytes at offset %d, flashed %d bytes binary. Total: %d bytes.", 
                          datasize, (int)(spiffs_offset - datasize), (int)decodedLen, (int)finalsize);
-                add_log("ota_flash", "flashing", (spiffs_offset * 100) / fp_size, 0, type + 1, log_details);
+                int overall_progress = (type * 100 / FW_UPDATE_NUM_PARTS) + (spiffs_offset * 100) / (fp_size * FW_UPDATE_NUM_PARTS);
+                add_log("ota_flash", "flashing", overall_progress, 0, type + 1, log_details);
             } else {
                 retry++;
                 ftp.qftp_file_seek(fp, encodedOffset, 0);
@@ -851,8 +859,6 @@ static uint8_t trigger_firmware_update_flow() {
     
     setFloatValue(FW_DOWNLOAD_PROGRESS, 1);
     
-    // We no longer allocate a 1.5MB PSRAM buffer!
-    // Initialize OTA Update partition immediately
     add_log("ota_flash", "initializing", 5, 0, 0, "Initializing OTA update flashing session...");
     
     #ifdef ESP_PLATFORM
@@ -871,7 +877,6 @@ static uint8_t trigger_firmware_update_flow() {
     spiffs_offset = 0;
     
     // PRE-CLEAR: Delete ALL old firmware part files from UFS before starting download
-    // This prevents UFS "file write failed" (error 729) when storage is full from a prior run.
     add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "Pre-clearing ALL old OTA firmware files from modem UFS storage...");
     #ifdef ESP_PLATFORM
     for (int p = 1; p <= FW_UPDATE_NUM_PARTS; p++) {
@@ -884,14 +889,21 @@ static uint8_t trigger_firmware_update_flow() {
         }
         char del_all[128];
         snprintf(del_all, sizeof(del_all), "AT+QFDEL=\"UFS:%s\"\r\n", fname.c_str());
-        module->sendCommand(del_all, "OK", 900, 1, 200, "+CME ERROR: 418");
+        bool del_ok = module->sendCommand(del_all, "OK", 900, 1, 200, "+CME ERROR: 418");
         char del_log[256];
-        snprintf(del_log, sizeof(del_log), "Pre-deleted: UFS:%s", fname.c_str());
+        if (del_ok) {
+            if (strstr(module->buffer, "+CME ERROR: 418") != NULL) {
+                snprintf(del_log, sizeof(del_log), "Pre-clean: UFS:%s not found (already clean)", fname.c_str());
+            } else {
+                snprintf(del_log, sizeof(del_log), "Pre-deleted: UFS:%s", fname.c_str());
+            }
+        } else {
+            snprintf(del_log, sizeof(del_log), "Pre-delete failed: UFS:%s", fname.c_str());
+        }
         add_log("UFS_CLEAN", "cleanup", 0, 0, p, del_log);
     }
     // Also delete combined firmware file
     module->sendCommand("AT+QFDEL=\"UFS:firm\"\r\n", "OK", 900, 1, 200, "+CME ERROR: 418");
-    module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
     add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "UFS pre-clean complete. Starting sequential part downloads.");
     #endif
     
@@ -938,7 +950,8 @@ static uint8_t trigger_firmware_update_flow() {
         uint32_t parsed_size = 476856; // Default fallback
         char list_cmd[256];
         snprintf(list_cmd, sizeof(list_cmd), "AT+QFLST=\"UFS:%s\"\r\n", filename1.c_str());
-        if (module->sendCommand(list_cmd, "OK", 2000, 1)) {
+        bool size_ok = module->sendCommand(list_cmd, "OK", 2000, 1);
+        if (size_ok) {
             char* ptr = strstr(module->buffer, filename1.c_str());
             if (ptr != NULL) {
                 char* comma = strchr(ptr, ',');
@@ -951,6 +964,10 @@ static uint8_t trigger_firmware_update_flow() {
             snprintf(size_log, sizeof(size_log), "UFS:%s size from modem: %u bytes", filename1.c_str(), parsed_size);
             add_log("UFS_READ", "reading", 0, 0, part, size_log);
             Serial.printf("[UFS_READ] %s\n", size_log);
+        } else {
+            char size_log[128];
+            snprintf(size_log, sizeof(size_log), "Warning: Failed to get UFS:%s size, using default fallback.", filename1.c_str());
+            add_log("UFS_READ_WARN", "warning", 0, 0, part, size_log);
         }
         setFloatValue(FP_SIZE, parsed_size);
         #endif
@@ -973,7 +990,7 @@ static uint8_t trigger_firmware_update_flow() {
     
     char details[128];
     snprintf(details, sizeof(details), "Decoded firmware file complete. Total binary size: %u bytes", finalsize);
-    add_log("validation", "checking", 90, 0, 4, details);
+    add_log("validation", "checking", 90, 0, FW_UPDATE_NUM_PARTS, details);
     modbus_set_status(STATUS_FLASHING);
     
     // Commit the OTA partition
@@ -981,7 +998,7 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(ERROR4, 9);
         modbus_set_status(STATUS_COMPLETE);
         modbus_set_progress(100);
-        add_log("system", "restarting", 100, 0, 4, "OTA Flashing complete. Restarting ESP32...");
+        add_log("system", "restarting", 100, 0, FW_UPDATE_NUM_PARTS, "OTA Flashing complete. Restarting ESP32...");
         delay(2000);
         ESP.restart();
     } else {
@@ -989,7 +1006,7 @@ static uint8_t trigger_firmware_update_flow() {
         Update.printError(Serial);
         #endif
         setFloatValue(ERROR4, 10);
-        add_log("ota_flash", "error", 100, ERR_OTA_FLASH, 4, "OTA partition closing write failed!");
+        add_log("ota_flash", "error", 100, ERR_OTA_FLASH, FW_UPDATE_NUM_PARTS, "OTA partition closing write failed!");
     }
     
     if (err_code == 1) {
@@ -1015,12 +1032,26 @@ static void handle_status() {
         offset = server.arg("offset").toInt();
     }
     
+    char buf_reg_1[16], buf_reg_3[16], buf_reg_5[16], buf_reg_7[16], buf_reg_9[16], buf_reg_11[16];
+    snprintf(buf_reg_1, sizeof(buf_reg_1), "%.2f", getFloatValue(FW_DOWNLOAD_PROGRESS));
+    snprintf(buf_reg_3, sizeof(buf_reg_3), "%.2f", getFloatValue(ERROR4));
+    snprintf(buf_reg_5, sizeof(buf_reg_5), "%.2f", getFloatValue(FW_TOTAL_PARTS));
+    snprintf(buf_reg_7, sizeof(buf_reg_7), "%.2f", getFloatValue(FILE_UUID));
+    snprintf(buf_reg_9, sizeof(buf_reg_9), "%.2f", getFloatValue(SPIFF_SET_BIT));
+    snprintf(buf_reg_11, sizeof(buf_reg_11), "%.2f", getFloatValue(FP_SIZE));
+    
     String json = "{\n";
     json += "  \"gprs_connected\": true,\n";
     json += "  \"status\": " + String(modbus_get_register(REG_DOWNLOAD_STATUS)) + ",\n";
     json += "  \"progress\": " + String(modbus_get_register(REG_PROGRESS_PERCENT)) + ",\n";
     json += "  \"error\": " + String(modbus_get_register(REG_ERROR_CODE)) + ",\n";
     json += "  \"part\": " + String(modbus_get_register(REG_CURRENT_PART)) + ",\n";
+    json += "  \"float_reg_1\": " + String(buf_reg_1) + ",\n";
+    json += "  \"float_reg_3\": " + String(buf_reg_3) + ",\n";
+    json += "  \"float_reg_5\": " + String(buf_reg_5) + ",\n";
+    json += "  \"float_reg_7\": " + String(buf_reg_7) + ",\n";
+    json += "  \"float_reg_9\": " + String(buf_reg_9) + ",\n";
+    json += "  \"float_reg_11\": " + String(buf_reg_11) + ",\n";
     json += "  \"logs\": [\n";
     for (int i = offset; i < s_log_count; i++) {
         json += "    {\n";
@@ -1045,7 +1076,7 @@ static void ota_background_task(void* pvParameters) {
 
 static void handle_trigger() {
     s_log_count = 0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
         char arg_name[8];
         snprintf(arg_name, sizeof(arg_name), "url%d", i + 1);
         if (server.hasArg(arg_name)) {
@@ -1145,6 +1176,21 @@ static void handle_write_register() {
         int val = server.arg("value").toInt();
         modbus_set_register(reg, val);
         
+        // Synchronize float registers for simulation
+        if (reg == REG_DOWNLOAD_STATUS) {
+            if (val == STATUS_IDLE) setFloatValue(FW_DOWNLOAD_PROGRESS, 0.0f);
+            else if (val == STATUS_DOWNLOADING) setFloatValue(FW_DOWNLOAD_PROGRESS, 1.0f);
+            else if (val == STATUS_DECODING) setFloatValue(FW_DOWNLOAD_PROGRESS, 2.0f);
+            else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, 3.0f);
+            else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, 18.0f);
+            else if (val == STATUS_ERROR) setFloatValue(FW_DOWNLOAD_PROGRESS, -1.0f);
+        } else if (reg == REG_ERROR_CODE) {
+            setFloatValue(ERROR4, (float)val);
+        } else if (reg == REG_CURRENT_PART) {
+            setFloatValue(SPIFF_SET_BIT, val * 10000.0f);
+            setFloatValue(FP_SIZE, 80000.0f);
+        }
+        
         char details[128];
         snprintf(details, sizeof(details), "Manual Modbus Write: Reg %d = %d", reg, val);
         add_log("modbus_write", "idle", 0, 0, 0, details);
@@ -1206,7 +1252,11 @@ static void handle_list_modem_files() {
                   "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
                   "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
                   "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
+                  "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part5.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part6.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part7.b64\", \"size\": 744155},\n"
+                  "    {\"name\": \"UFS:otafw_part8.b64\", \"size\": 744155}\n"
                   "  ]\n"
                   "}";
     server.send(200, "application/json", json);
@@ -1343,10 +1393,9 @@ static DWORD WINAPI run_mock_update(LPVOID lpParam) {
         parts[i][len] = '\0';
     }
 
-    s_parts_payloads[0] = parts[0];
-    s_parts_payloads[1] = parts[1];
-    s_parts_payloads[2] = parts[2];
-    s_parts_payloads[3] = parts[3];
+    for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
+        s_parts_payloads[i] = parts[i];
+    }
 
     // Trigger user's exact flow
     trigger_firmware_update_flow();
@@ -1459,6 +1508,12 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                  << "  \"progress\": " << modbus_get_register(REG_PROGRESS_PERCENT) << ",\n"
                  << "  \"error\": " << modbus_get_register(REG_ERROR_CODE) << ",\n"
                  << "  \"part\": " << modbus_get_register(REG_CURRENT_PART) << ",\n"
+                 << "  \"float_reg_1\": " << getFloatValue(FW_DOWNLOAD_PROGRESS) << ",\n"
+                 << "  \"float_reg_3\": " << getFloatValue(ERROR4) << ",\n"
+                 << "  \"float_reg_5\": " << getFloatValue(FW_TOTAL_PARTS) << ",\n"
+                 << "  \"float_reg_7\": " << getFloatValue(FILE_UUID) << ",\n"
+                 << "  \"float_reg_9\": " << getFloatValue(SPIFF_SET_BIT) << ",\n"
+                 << "  \"float_reg_11\": " << getFloatValue(FP_SIZE) << ",\n"
                  << "  \"logs\": [\n";
             for (int i = offset; i < s_log_count; i++) {
                 json << "    {\n"
@@ -1481,7 +1536,7 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                      << "Connection: close\r\n\r\n"
                      << body;
         } else if (path.rfind("/api/trigger", 0) == 0 && method == "POST") {
-            for (int k = 0; k < 4; k++) {
+            for (int k = 0; k < FW_UPDATE_NUM_PARTS; k++) {
                 char param_key[16];
                 snprintf(param_key, sizeof(param_key), "url%d=", k + 1);
                 size_t p_pos = path.find(param_key);
@@ -1577,6 +1632,22 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                 reg = atoi(path.substr(reg_pos + 9).c_str());
                 val = atoi(path.substr(val_pos + 6).c_str());
                 modbus_set_register(reg, val);
+                
+                // Synchronize float registers for simulation
+                if (reg == REG_DOWNLOAD_STATUS) {
+                    if (val == STATUS_IDLE) setFloatValue(FW_DOWNLOAD_PROGRESS, 0.0f);
+                    else if (val == STATUS_DOWNLOADING) setFloatValue(FW_DOWNLOAD_PROGRESS, 1.0f);
+                    else if (val == STATUS_DECODING) setFloatValue(FW_DOWNLOAD_PROGRESS, 2.0f);
+                    else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, 3.0f);
+                    else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, 18.0f);
+                    else if (val == STATUS_ERROR) setFloatValue(FW_DOWNLOAD_PROGRESS, -1.0f);
+                } else if (reg == REG_ERROR_CODE) {
+                    setFloatValue(ERROR4, (float)val);
+                } else if (reg == REG_CURRENT_PART) {
+                    setFloatValue(SPIFF_SET_BIT, val * 10000.0f);
+                    setFloatValue(FP_SIZE, 80000.0f);
+                }
+                
                 char details[128];
                 snprintf(details, sizeof(details), "Manual Modbus Write: Reg %d = %d", reg, val);
                 add_log("modbus_write", "idle", 0, 0, 0, details);
@@ -1592,7 +1663,11 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                                "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
                                "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
                                "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
+                               "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part5.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part6.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part7.b64\", \"size\": 744155},\n"
+                               "    {\"name\": \"UFS:otafw_part8.b64\", \"size\": 744155}\n"
                                "  ]\n"
                                "}";
             response << "HTTP/1.1 200 OK\r\n"
