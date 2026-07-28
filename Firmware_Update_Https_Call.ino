@@ -71,11 +71,7 @@ static String s_custom_urls[FW_UPDATE_NUM_PARTS] = {
     "http://64.251.10.159/otafw_part1.b64",
     "http://64.251.10.159/otafw_part2.b64",
     "http://64.251.10.159/otafw_part3.b64",
-    "http://64.251.10.159/otafw_part4.b64",
-    "http://64.251.10.159/otafw_part5.b64",
-    "http://64.251.10.159/otafw_part6.b64",
-    "http://64.251.10.159/otafw_part7.b64",
-    "http://64.251.10.159/otafw_part8.b64"
+    "http://64.251.10.159/otafw_part4.b64"
 };
 static std::string s_parts_data[FW_UPDATE_NUM_PARTS]; // Persist downloaded parts in simulation
 
@@ -138,13 +134,23 @@ static void setFloatValue(int key, float val) {
             } else if (val == 2) {
                 modbus_set_status(STATUS_DECODING);
                 modbus_set_progress(10);
-            } else if (val >= 3) {
+            } else if (val >= 3 && val <= 10) {
                 int part = ((int)val - 1) / 2;
                 if ((int)val % 2 == 1) {
                     modbus_set_progress(((part - 1) * 100 / FW_UPDATE_NUM_PARTS) + 5);
                 } else {
                     modbus_set_progress(part * 100 / FW_UPDATE_NUM_PARTS);
                 }
+            } else if (val == 11) {
+                modbus_set_status(STATUS_DECODING);
+                modbus_set_progress(95);
+            } else if (val >= 12 && val < 18) {
+                modbus_set_status(STATUS_FLASHING);
+                int flash_p = 95 + (int)(((val - 12.0f) / 6.0f) * 4.0f);
+                modbus_set_progress(flash_p);
+            } else if (val >= 18) {
+                modbus_set_status(STATUS_COMPLETE);
+                modbus_set_progress(100);
             }
         } else if (key == ERROR4) {
             if (val != 0 && val != 9) { // 9 is success completion indicator
@@ -677,7 +683,6 @@ static qftp ftp(module);
 // Static buffers required for reading
 static uint32_t finalsize = 0;
 static uint32_t spiffs_offset = 0;
-static uint32_t spiffs_size = 0;
 static uint8_t buf1[8192];
 
 int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
@@ -747,8 +752,50 @@ uint8_t qftp::qftp_file_seek(int handle, int offset, uint8_t mode) {
     return 0;
 }
 
-uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char *sd_filename) {
-    (void)type; (void)sd_filename;
+static uint8_t* s_psram_base64_buffer = NULL;
+static size_t s_psram_base64_capacity = 0;
+static size_t s_psram_base64_length = 0;
+
+static void clean_psram_buffer() {
+    if (s_psram_base64_buffer != NULL) {
+        #ifdef ESP_PLATFORM
+        heap_caps_free(s_psram_base64_buffer);
+        #else
+        free(s_psram_base64_buffer);
+        #endif
+        s_psram_base64_buffer = NULL;
+    }
+    s_psram_base64_capacity = 0;
+    s_psram_base64_length = 0;
+}
+
+static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
+    if (s_psram_base64_length + len > s_psram_base64_capacity) {
+        size_t new_capacity = s_psram_base64_capacity == 0 ? 1024 * 1024 : s_psram_base64_capacity;
+        while (s_psram_base64_length + len > new_capacity) {
+            new_capacity += 512 * 1024; // grow by 512 KB
+        }
+        
+        #ifdef ESP_PLATFORM
+        uint8_t* new_buf = (uint8_t*)heap_caps_realloc(s_psram_base64_buffer, new_capacity, MALLOC_CAP_SPIRAM);
+        #else
+        uint8_t* new_buf = (uint8_t*)realloc(s_psram_base64_buffer, new_capacity);
+        #endif
+        
+        if (new_buf == NULL) {
+            Serial.println("PSRAM buffer reallocation failed!");
+            return false;
+        }
+        s_psram_base64_buffer = new_buf;
+        s_psram_base64_capacity = new_capacity;
+    }
+    
+    memcpy(s_psram_base64_buffer + s_psram_base64_length, data, len);
+    s_psram_base64_length += len;
+    return true;
+}
+
+uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
     uint32_t fp = ftp.qftp_file_open(filename, 2, 0);
     if (fp == 0) {
         Serial.println("FTP file open failed");
@@ -757,18 +804,14 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
     
     uint32_t encodedOffset = 0;
     uint32_t fp_size = getFloatValue(FP_SIZE);
-    spiffs_offset = 0;
+    uint32_t file_offset = 0;
     int datasize = 1;
-    int xcount = 0;
-
-    // Local stack-allocated buffer for chunk-wise decoding
-    static uint8_t decode_temp_buf[8192];
-
+    
     while (datasize > 0) {
-        uint32_t size = fp_size - spiffs_offset;
+        uint32_t size = fp_size - file_offset;
         int retry = 0;
         bool success = false;
-
+        
         while (retry < MAX_RETRY1 && !success) {
             memset(buf1, 0, sizeof(buf1));
             if (size > read_size) {
@@ -781,7 +824,6 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
                 datasize = ftp.qftp_file_read(fp, size, buf1);
             }
             
-            xcount++;
             if (datasize == 0) {
                 ftp.qftp_file_close(fp);
                 return 1;
@@ -792,58 +834,110 @@ uint8_t ftp_filedownload(uint8_t type, String filename, uint16_t read_size, char
                 delay(10);
                 continue;
             }
-
-            size_t decodedLen = 0;
-            spiffs_size = datasize;
-
-            int ret = mbedtls_base64_decode(
-                decode_temp_buf,
-                sizeof(decode_temp_buf),
-                &decodedLen,
-                buf1,
-                datasize
-            );
-
-            if (ret == 0) {
-                // Write decoded buffer chunk directly to OTA partition
-                if (Update.write(decode_temp_buf, decodedLen) != decodedLen) {
-                    Serial.println("OTA Write chunk failed!");
-                    #ifdef ESP_PLATFORM
-                    Update.printError(Serial);
-                    #endif
-                    ftp.qftp_file_close(fp);
-                    return 0;
-                }
-                
-                spiffs_offset += datasize;
-                finalsize = finalsize + decodedLen;
-                success = true;
-                encodedOffset += datasize;
-
-                char log_details[256];
-                snprintf(log_details, sizeof(log_details), "Read chunk of %d base64 bytes at offset %d, flashed %d bytes binary. Total: %d bytes.", 
-                         datasize, (int)(spiffs_offset - datasize), (int)decodedLen, (int)finalsize);
-                int overall_progress = (type * 100 / FW_UPDATE_NUM_PARTS) + (spiffs_offset * 100) / (fp_size * FW_UPDATE_NUM_PARTS);
-                add_log("ota_flash", "flashing", overall_progress, 0, type + 1, log_details);
-            } else {
-                retry++;
-                ftp.qftp_file_seek(fp, encodedOffset, 0);
-                delay(100);
+            
+            // Append to PSRAM base64 buffer
+            if (!append_to_psram_buffer((const uint8_t*)buf1, datasize)) {
+                ftp.qftp_file_close(fp);
+                return 0;
             }
+            
+            file_offset += datasize;
+            encodedOffset += datasize;
+            success = true;
+            
+            // Update offset indicator register
+            setFloatValue(SPIFF_SET_BIT, file_offset);
         }
         
         if (!success) {
-            setFloatValue(ERROR4, 6);
             ftp.qftp_file_close(fp);
             return 0;
         }
         delay(10);
-        setFloatValue(SPIFF_SET_BIT, spiffs_offset);
     }
-
+    
     ftp.qftp_file_close(fp);
     return 1;
 }
+
+uint8_t decode_and_flash_psram() {
+    add_log("ota_flash", "decoding", 0, 0, 0, "All base64 files loaded into PSRAM. Starting decode & OTA flash...");
+    modbus_set_status(STATUS_DECODING);
+    setFloatValue(FW_DOWNLOAD_PROGRESS, 10.0f); // status value for decoding/flashing
+
+    #ifdef ESP_PLATFORM
+    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+        setFloatValue(ERROR4, 7);
+        Update.printError(Serial);
+        add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "Failed to initialize OTA partition!");
+        return 0;
+    }
+    #else
+    Update.begin(108); // Simulate binary size
+    #endif
+
+    static uint8_t decode_temp_buf[8192];
+    size_t processed_b64 = 0;
+    finalsize = 0;
+    
+    while (processed_b64 < s_psram_base64_length) {
+        size_t chunk_chars = 6144;
+        if (processed_b64 + chunk_chars > s_psram_base64_length) {
+            chunk_chars = s_psram_base64_length - processed_b64;
+        }
+        
+        if (chunk_chars == 0) {
+            break;
+        }
+        
+        size_t decodedLen = 0;
+        int ret = mbedtls_base64_decode(
+            decode_temp_buf,
+            sizeof(decode_temp_buf),
+            &decodedLen,
+            (const unsigned char*)(s_psram_base64_buffer + processed_b64),
+            chunk_chars
+        );
+        
+        if (ret != 0) {
+            Serial.println("Base64 decoding failed during final flash!");
+            add_log("ota_flash", "error", 0, ERR_BASE64_DECODE, 0, "Base64 decoding of PSRAM buffer failed!");
+            setFloatValue(ERROR4, 3);
+            #ifdef ESP_PLATFORM
+            Update.abort();
+            #endif
+            return 0;
+        }
+        
+        if (Update.write(decode_temp_buf, decodedLen) != decodedLen) {
+            Serial.println("OTA Write chunk failed!");
+            #ifdef ESP_PLATFORM
+            Update.printError(Serial);
+            #endif
+            add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "OTA writing chunk from PSRAM failed!");
+            setFloatValue(ERROR4, 5);
+            return 0;
+        }
+        
+        processed_b64 += chunk_chars;
+        finalsize += decodedLen;
+        
+        // Progress tracking for flashing (10.0f is starting progress of flashing, let's scale it to 17.0f)
+        float flash_progress = 10.0f + ((float)processed_b64 / s_psram_base64_length) * 7.0f;
+        setFloatValue(FW_DOWNLOAD_PROGRESS, flash_progress);
+        
+        char log_details[256];
+        snprintf(log_details, sizeof(log_details), "Flashing PSRAM: decoded %d binary bytes. Total: %d bytes.", 
+                 (int)decodedLen, (int)finalsize);
+        add_log("ota_flash", "flashing", (int)((processed_b64 * 100) / s_psram_base64_length), 0, 0, log_details);
+        
+        delay(5);
+    }
+    
+    return 1;
+}
+
+
 
 // =========================================================================
 // Main orchestrator flow based on user specification
@@ -861,16 +955,7 @@ static uint8_t trigger_firmware_update_flow() {
     
     add_log("ota_flash", "initializing", 5, 0, 0, "Initializing OTA update flashing session...");
     
-    #ifdef ESP_PLATFORM
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
-        setFloatValue(ERROR4, 7);
-        Update.printError(Serial);
-        add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "Failed to initialize OTA partition!");
-        return 0;
-    }
-    #else
-    Update.begin(108); // Simulate binary size
-    #endif
+    clean_psram_buffer(); // clear old buffers
     
     setFloatValue(FW_DOWNLOAD_PROGRESS, 2);
     finalsize = 0;
@@ -926,9 +1011,7 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(ERROR4, k);
         if (k != 0) {
             setFloatValue(ERROR4, 11);
-            #ifdef ESP_PLATFORM
-            Update.abort();
-            #endif
+            clean_psram_buffer();
             return 0;
         }
         
@@ -972,21 +1055,34 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(FP_SIZE, parsed_size);
         #endif
         
-        // Loop open, seek, read chunks, and decode directly to OTA
-        err_code = ftp_filedownload(part - 1, filename1, 6144, (char*)"qwe.b64");
+        // Copy UFS file contents completely into PSRAM buffer
+        err_code = read_ufs_file_to_psram(filename1, 6144);
         if (err_code == 0) {
             setFloatValue(FILE_UUID, 0);
-            #ifdef ESP_PLATFORM
-            Update.abort();
-            #endif
+            clean_psram_buffer();
             return 0;
         }
+        
+        // Immediately delete downloaded part file from GPRS storage to free up UFS space
+        #ifdef ESP_PLATFORM
+        char del_cmd[128];
+        snprintf(del_cmd, sizeof(del_cmd), "AT+QFDEL=\"UFS:%s\"\r\n", filename1.c_str());
+        module->sendCommand(del_cmd, "OK", 1000, 1, 200, "+CME ERROR: 418");
+        #endif
+        
         setFloatValue(FW_DOWNLOAD_PROGRESS, 2 + (part * 2));
         delay(10);
     }
     
     resetWatchdog();
     delay(100);
+    
+    // Now start decryption/decoding and flashing from PSRAM buffer to OTA
+    err_code = decode_and_flash_psram();
+    if (err_code == 0) {
+        clean_psram_buffer();
+        return 0;
+    }
     
     char details[128];
     snprintf(details, sizeof(details), "Decoded firmware file complete. Total binary size: %u bytes", finalsize);
@@ -999,6 +1095,7 @@ static uint8_t trigger_firmware_update_flow() {
         modbus_set_status(STATUS_COMPLETE);
         modbus_set_progress(100);
         add_log("system", "restarting", 100, 0, FW_UPDATE_NUM_PARTS, "OTA Flashing complete. Restarting ESP32...");
+        clean_psram_buffer();
         delay(2000);
         ESP.restart();
     } else {
@@ -1008,6 +1105,8 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(ERROR4, 10);
         add_log("ota_flash", "error", 100, ERR_OTA_FLASH, FW_UPDATE_NUM_PARTS, "OTA partition closing write failed!");
     }
+    
+    clean_psram_buffer();
     
     if (err_code == 1) {
         setFloatValue(FILE_UUID, 0);
@@ -1252,11 +1351,7 @@ static void handle_list_modem_files() {
                   "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
                   "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
                   "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part5.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part6.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part7.b64\", \"size\": 744155},\n"
-                  "    {\"name\": \"UFS:otafw_part8.b64\", \"size\": 744155}\n"
+                  "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
                   "  ]\n"
                   "}";
     server.send(200, "application/json", json);
@@ -1663,11 +1758,7 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                                "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
                                "    {\"name\": \"UFS:otafw_part2.b64\", \"size\": 744155},\n"
                                "    {\"name\": \"UFS:otafw_part3.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part5.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part6.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part7.b64\", \"size\": 744155},\n"
-                               "    {\"name\": \"UFS:otafw_part8.b64\", \"size\": 744155}\n"
+                               "    {\"name\": \"UFS:otafw_part4.b64\", \"size\": 744155}\n"
                                "  ]\n"
                                "}";
             response << "HTTP/1.1 200 OK\r\n"

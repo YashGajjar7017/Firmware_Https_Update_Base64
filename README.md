@@ -1,16 +1,23 @@
-# ESP32 GPRS HTTPS Firmware Updater with Modbus Telemetry & Web Dashboard
+# ESP32 GPRS HTTPS Chunk-wise OTA Update Controller with PSRAM Buffering
 
-This repository contains C/C++ firmware designed for ESP32 microcontrollers. It manages downloading a Base64-encoded binary firmware over a GPRS cellular modem connection, decoding it on-the-fly, writing directly to the OTA partition, exposing status via Modbus registers, and hosting an interactive Web GUI dashboard.
+This repository contains C/C++ firmware designed for ESP32 microcontrollers to perform robust OTA updates over cellular (GPRS) connections. It solves GPRS UFS write errors/disconnects by sequential downloading, immediate buffering into ESP32 PSRAM, and automatic file deletion from the cellular modem's UFS storage.
+
+---
+
+## Technical Highlights & Architecture
+
+1. **PSRAM Buffering**: Rather than decoding chunk-by-chunk on the fly or keeping multiple base64 files on the GPRS UFS, the system downloads one part file to GPRS storage, immediately reads/moves its content into ESP32 PSRAM, and deletes the file from UFS. This cycle repeats for all 4 parts.
+2. **Dynamic Flashing**: Once all 4 parts are buffered in PSRAM, the OTA flash partition is initialized. The raw base64 data is decoded in 6144-character segments and written directly to the update partition via `Update.write()`, using a single small stack-allocated output buffer.
+3. **Modbus TCP/IP Status**: System status, progress, errors, and current part indicators are exposed via Modbus registers, which can be queried directly over TCP/IP.
+4. **Interactive Web Dashboard**: Embedded HTML/CSS/JS glassmorphic dashboard allows cellular diagnostics, manual URL triggers, storage telemetry updates, and viewing real-time UART logs.
 
 ---
 
 ## Codebase Architecture & File Structure
 
-The project is structured as follows:
-
 *   **[Firmware_Update_Https_Call.ino](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/Firmware_Update_Https_Call.ino)**: Main Arduino sketch entry point. Coordinates Wi-Fi AP setup, starts the web server routing endpoints (`/`, `/api/status`, `/api/trigger`), manages background tasks, and performs the download/OTA execution. Includes standard Win32 mock HTTP sockets for PC hosting.
 *   **[def.h](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/def.h)**: System configurations, register defines (Holding Registers 0 to 3), and Modbus read/write hooks.
-*   **[web_gui.h](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/web_gui.h)**: Embedded HTML, CSS, and JS web dashboard. Uses glassmorphic dark mode styling to visualize download progress, Modbus telemetry, and log files.
+*   **[web_gui.h](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/web_gui.h)**: Embedded HTML, CSS, and JS web dashboard. Uses glassmorphic dark mode styling to visualize download progress, telemetry, and log files.
 *   **[modbus_state.h](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/modbus_state.h)** & **[modbus_state.cpp](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/modbus_state.cpp)**: Thread-safe holding registers registry utilizing FreeRTOS mutexes.
 *   **[firmware_update.h](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/firmware_update.h)** & **[firmware_update.cpp](file:///a:/Coding/IOT_Code/Firmware_Update_Https_Call/firmware_update.cpp)**: Core logic for base64 streaming, dynamic SPIRAM/PSRAM heap growth, and native flashing.
 

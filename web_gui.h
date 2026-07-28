@@ -236,7 +236,7 @@ const char index_html[] = R"rawhtml(
         /* Part indicators */
         .parts-tracker {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 12px;
         }
 
@@ -649,22 +649,6 @@ const char index_html[] = R"rawhtml(
                             <span class="part-num">Part 4</span>
                             <div class="part-dot"></div>
                         </div>
-                        <div id="part5" class="part-node">
-                            <span class="part-num">Part 5</span>
-                            <div class="part-dot"></div>
-                        </div>
-                        <div id="part6" class="part-node">
-                            <span class="part-num">Part 6</span>
-                            <div class="part-dot"></div>
-                        </div>
-                        <div id="part7" class="part-node">
-                            <span class="part-num">Part 7</span>
-                            <div class="part-dot"></div>
-                        </div>
-                        <div id="part8" class="part-node">
-                            <span class="part-num">Part 8</span>
-                            <div class="part-dot"></div>
-                        </div>
                         <div id="partAll" class="part-node special-node">
                             <span class="part-num">All Chunks</span>
                             <div class="part-dot"></div>
@@ -701,22 +685,6 @@ const char index_html[] = R"rawhtml(
                         <label for="fwUrlInput4">Part 4 URL</label>
                         <input type="text" id="fwUrlInput4" class="text-input" value="http://64.251.10.159/otafw_part4.b64">
                     </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label for="fwUrlInput5">Part 5 URL</label>
-                        <input type="text" id="fwUrlInput5" class="text-input" value="http://64.251.10.159/otafw_part5.b64">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label for="fwUrlInput6">Part 6 URL</label>
-                        <input type="text" id="fwUrlInput6" class="text-input" value="http://64.251.10.159/otafw_part6.b64">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label for="fwUrlInput7">Part 7 URL</label>
-                        <input type="text" id="fwUrlInput7" class="text-input" value="http://64.251.10.159/otafw_part7.b64">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label for="fwUrlInput8">Part 8 URL</label>
-                        <input type="text" id="fwUrlInput8" class="text-input" value="http://64.251.10.159/otafw_part8.b64">
-                    </div>
                 </div>
                 <button id="btnTrigger" class="btn-trigger" onclick="triggerOTA()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
@@ -725,37 +693,9 @@ const char index_html[] = R"rawhtml(
             </div>
         </div>
 
-        <!-- Column 2: Modbus Telemetry & Overrides -->
+        <!-- Column 2: Telemetry & Overrides -->
                 <div>
-            <div class="panel">
-                <div class="panel-title">Modbus Register Bindings (TCP/IP Float32)</div>
-                <div class="register-list">
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 1 (Download Progress)</span>
-                        <span id="reg1" class="register-val">0.00</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 3 (Error Code)</span>
-                        <span id="reg3" class="register-val">0.00</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 5 (Total Parts)</span>
-                        <span id="reg5" class="register-val">0.00</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 7 (File UUID)</span>
-                        <span id="reg7" class="register-val">0.00</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 9 (Part Offset / Bytes)</span>
-                        <span id="reg9" class="register-val">0.00</span>
-                    </div>
-                    <div class="register-item">
-                        <span class="register-lbl">Holding Reg 11 (Part Size / Bytes)</span>
-                        <span id="reg11" class="register-val">0.00</span>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="panel">
                 <div class="panel-title">Diagnostics & Test Actions</div>
@@ -962,16 +902,8 @@ const char index_html[] = R"rawhtml(
             document.getElementById('progressVal').innerText = `${data.progress}%`;
             document.getElementById('progressBar').style.width = `${data.progress}%`;
 
-            // 3. Update Modbus labels (Float registers 1, 3, 5, 7, 9, 11)
-            document.getElementById('reg1').innerText = Number(data.float_reg_1).toFixed(2);
-            document.getElementById('reg3').innerText = Number(data.float_reg_3).toFixed(2);
-            document.getElementById('reg5').innerText = Number(data.float_reg_5).toFixed(2);
-            document.getElementById('reg7').innerText = Number(data.float_reg_7).toFixed(2);
-            document.getElementById('reg9').innerText = Number(data.float_reg_9).toFixed(2);
-            document.getElementById('reg11').innerText = Number(data.float_reg_11).toFixed(2);
-
-            // 4. Update Part node visual status (8 parts)
-            for (let p = 1; p <= 8; p++) {
+            // 4. Update Part node visual status (4 parts)
+            for (let p = 1; p <= 4; p++) {
                 const node = document.getElementById(`part${p}`);
                 if (node) {
                     node.className = 'part-node';
@@ -996,7 +928,7 @@ const char index_html[] = R"rawhtml(
                 if (data.status !== 5) {
                     if (data.status === 3 || data.status === 4) {
                         nodeAll.classList.add('completed');
-                    } else if (data.status === 2 && data.part === 8) {
+                    } else if (data.status === 2 && data.part === 4) {
                         nodeAll.classList.add('active');
                     }
                 }
@@ -1126,17 +1058,13 @@ const char index_html[] = R"rawhtml(
         const url2 = document.getElementById('fwUrlInput2').value;
         const url3 = document.getElementById('fwUrlInput3').value;
         const url4 = document.getElementById('fwUrlInput4').value;
-        const url5 = document.getElementById('fwUrlInput5').value;
-        const url6 = document.getElementById('fwUrlInput6').value;
-        const url7 = document.getElementById('fwUrlInput7').value;
-        const url8 = document.getElementById('fwUrlInput8').value;
         btn.setAttribute('disabled', 'true');
         clearConsole();
         logOffset = 0;
-        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence with 8 URLs.', 'info');
+        appendLog(null, 'system', 'triggering', 0, 0, 0, 'User triggered OTA sequence with 4 URLs.', 'info');
         
         try {
-            const query = `url1=${encodeURIComponent(url1)}&url2=${encodeURIComponent(url2)}&url3=${encodeURIComponent(url3)}&url4=${encodeURIComponent(url4)}&url5=${encodeURIComponent(url5)}&url6=${encodeURIComponent(url6)}&url7=${encodeURIComponent(url7)}&url8=${encodeURIComponent(url8)}`;
+            const query = `url1=${encodeURIComponent(url1)}&url2=${encodeURIComponent(url2)}&url3=${encodeURIComponent(url3)}&url4=${encodeURIComponent(url4)}`;
             const res = await fetch(`/api/trigger?${query}`, { method: 'POST' });
             if (!res.ok) throw new Error('API server rejected trigger request');
             appendLog(null, 'system', 'triggered', 0, 0, 0, 'OTA update process successfully spawned in background.', 'info');
