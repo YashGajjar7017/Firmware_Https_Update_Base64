@@ -47,8 +47,8 @@ const char index_html[] = R"rawhtml(
         }
 
         .dashboard {
-            width: 95%;
-            max-width: 1350px;
+            width: 100%;
+            max-width: 1600px;
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -57,6 +57,26 @@ const char index_html[] = R"rawhtml(
             padding: 30px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Two-column outer layout: panels left | console right */
+        .app-layout {
+            display: flex;
+            gap: 22px;
+            align-items: flex-start;
+        }
+
+        .panels-area {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        /* Right console sidebar */
+        .console-sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         @keyframes fadeIn {
@@ -449,13 +469,15 @@ const char index_html[] = R"rawhtml(
             box-shadow: 0 0 10px var(--primary-glow);
         }
 
-        /* Console Terminal */
         .console-panel {
             background: #060913;
             border: 1px solid var(--border-color);
             border-radius: 18px;
             padding: 20px;
             box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .console-header {
@@ -501,11 +523,13 @@ const char index_html[] = R"rawhtml(
         }
 
         .console-viewport {
-            height: 220px;
+            flex: 1;
+            min-height: 300px;
+            max-height: calc(100vh - 250px);
             overflow-y: auto;
             font-family: 'Fira Code', monospace;
-            font-size: 12px;
-            line-height: 1.6;
+            font-size: 11.5px;
+            line-height: 1.7;
             color: #38bdf8;
             padding-right: 8px;
         }
@@ -577,9 +601,12 @@ const char index_html[] = R"rawhtml(
         </div>
     </header>
 
-    <div class="grid">
-        <!-- Column 1: Update Control -->
-        <div>
+    <!-- Two-column layout: all panels on the left, tall console sidebar on the right -->
+    <div class="app-layout">
+        <div class="panels-area">
+            <div class="grid">
+                <!-- Column 1: Update Control -->
+                <div>
             <div class="panel">
                 <div class="panel-title">Update Status & Telemetry</div>
                 
@@ -648,7 +675,7 @@ const char index_html[] = R"rawhtml(
         </div>
 
         <!-- Column 2: Modbus Telemetry & Overrides -->
-        <div>
+                <div>
             <div class="panel">
                 <div class="panel-title">Modbus Register Bindings</div>
                 <div class="register-list">
@@ -713,7 +740,7 @@ const char index_html[] = R"rawhtml(
         </div>
 
         <!-- Column 3: Storage details & Modem UFS files -->
-        <div>
+                <div>
             <div class="panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div class="panel-title" style="margin-bottom: 0;">Modem Storage (UFS)</div>
@@ -772,20 +799,24 @@ const char index_html[] = R"rawhtml(
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+                </div>
+            </div><!-- end .grid -->
+        </div><!-- end .panels-area -->
 
-    <!-- Live Serial/UART Console Panel -->
-    <div class="console-panel">
-        <div class="console-header">
-            <span><div class="console-dot"></div>UART structured logs</span>
-            <button class="console-btn-clear" onclick="clearConsole()">Clear logs</button>
-        </div>
-        <div id="consoleViewport" class="console-viewport">
-            <div class="log-entry"><span class="log-time">[System]</span> <span class="log-info">Dashboard initialized. Connection established with ESP32 REST server.</span></div>
-        </div>
-    </div>
-</div>
+        <!-- RIGHT SIDEBAR: UART Structured Log Terminal -->
+        <div class="console-sidebar">
+            <div class="console-panel">
+                <div class="console-header">
+                    <span><div class="console-dot"></div>UART Structured Logs</span>
+                    <button class="console-btn-clear" onclick="clearConsole()">Clear logs</button>
+                </div>
+                <div id="consoleViewport" class="console-viewport">
+                    <div class="log-entry"><span class="log-time">[System]</span> <span class="log-info">Dashboard initialized. Connection established with ESP32 REST server.</span></div>
+                </div>
+            </div>
+        </div><!-- end .console-sidebar -->
+    </div><!-- end .app-layout -->
+</div><!-- end .dashboard -->
 
 <script>
     const STATUS_MAP = {

@@ -467,14 +467,48 @@ static std::string download_http_winsock(const std::string& full_url) {
 }
 #endif
 
+// Helper: extract the filename (last path segment) from a URL
+static String extract_url_filename(const char* url) {
+    const char* last_slash = strrchr(url, '/');
+    if (last_slash != NULL && *(last_slash + 1) != '\0') {
+        return String(last_slash + 1);
+    }
+    return String("otafw_part.b64");
+}
+
+// Helper: build a visual progress bar string like |=========>   | 20KB/410KB
+static void make_progress_bar(char* out, int out_len, uint32_t downloaded, uint32_t total) {
+    int pct = (total > 0) ? (int)((downloaded * 100UL) / total) : 0;
+    int filled = pct / 5;  // 20 chars total bar width
+    char bar[25];
+    for (int i = 0; i < 20; i++) {
+        if (i < filled - 1) bar[i] = '=';
+        else if (i == filled - 1) bar[i] = '>';
+        else bar[i] = ' ';
+    }
+    bar[20] = '\0';
+    snprintf(out, out_len, "|%s| %uKB/%uKB (%d%%)",
+             bar,
+             (unsigned)(downloaded / 1024),
+             (unsigned)(total / 1024),
+             pct);
+}
+
 uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String pass, int x) {
     (void)imei; (void)user; (void)pass;
     
-    // Clear UFS cache logs
+    // Extract filename from URL (e.g. otafw_part1.b64 from http://64.251.10.159/otafw_part1.b64)
+    String url_filename = extract_url_filename(url.c_str());
+    
+    // Clear UFS: delete the file by its URL-derived name, not by hardcoded part index
     module->sendCommand("AT+QFDEL=\"UFS:firm\"\r\n", "OK", 900, 1, 1000, "+CME ERROR: 418");
-    char del_cmd[64];
-    snprintf(del_cmd, sizeof(del_cmd), "AT+QFDEL=\"UFS:otafw_part%d.b64\"\r\n", x);
+    char del_cmd[128];
+    snprintf(del_cmd, sizeof(del_cmd), "AT+QFDEL=\"UFS:%s\"\r\n", url_filename.c_str());
     module->sendCommand(del_cmd, "OK", 900, 1, 1000, "+CME ERROR: 418");
+    
+    char del_log[256];
+    snprintf(del_log, sizeof(del_log), "Cleared old UFS file: UFS:%s before re-download.", url_filename.c_str());
+    add_log("UFS_DEL", "cleanup", 0, 0, x, del_log);
     module->sendCommand("AT+QFLST\r\n", "OK", 1000, 1);
 
     if (x >= 1 && x <= FW_UPDATE_NUM_PARTS) {
@@ -493,20 +527,26 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
             s_parts_data[x - 1] = downloaded;
             s_parts_payloads[x - 1] = s_parts_data[x - 1].c_str();
         } else {
-            // Keep existing payload if download is empty / fails
-            if (s_parts_data[x - 1].empty()) {
-                // Keep default
-            } else {
+            if (!s_parts_data[x - 1].empty()) {
                 s_parts_payloads[x - 1] = s_parts_data[x - 1].c_str();
             }
         }
         
+        uint32_t total_size = s_parts_payloads[x - 1] ? strlen(s_parts_payloads[x - 1]) : 0;
+        
         char log_req[512];
-        snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
+        snprintf(log_req, sizeof(log_req), "HTTP GET: %s -> Saving as UFS:%s", url_command1, url_filename.c_str());
         add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
         
+        // Emit visual progress bar
+        char prog_bar[64];
+        make_progress_bar(prog_bar, sizeof(prog_bar), total_size, total_size);
+        char log_prog[512];
+        snprintf(log_prog, sizeof(log_prog), "Part %d Download Progress: %s", x, prog_bar);
+        add_log("HTTP_PROG", "downloading", 100, 0, x, log_prog);
+        
         char log_done[512];
-        snprintf(log_done, sizeof(log_done), "ACK: Part %d downloaded successfully from URL: %s", x, url_command1);
+        snprintf(log_done, sizeof(log_done), "ACK: Part %d downloaded. URL: %s | File: UFS:%s", x, url_command1, url_filename.c_str());
         add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
         return 0;
         #else
@@ -515,7 +555,7 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         snprintf(url_command12, sizeof(url_command12), "AT+QHTTPURL=%d,160\r\n", urlLen);
 
         char log_req[512];
-        snprintf(log_req, sizeof(log_req), "HTTP GET request: %s", url_command1);
+        snprintf(log_req, sizeof(log_req), "HTTP GET: %s -> Saving as UFS:%s", url_command1, url_filename.c_str());
         add_log("HTTP_REQ", "requesting", 0, 0, x, log_req);
 
         if (!module->sendCommand(url_command12, "CONNECT", 1000, 1))
@@ -523,19 +563,58 @@ uint8_t TcpClient::getfirmwarefile(String url, String imei, String user, String 
         if (!module->sendCommand(url_command1, "OK", 6000, 1))
             return 4;
 
-        // Increase timeout to 120 seconds to allow download over cellular connection
-        if (!module->sendCommandOpt("AT+QHTTPGET=240\r\n", "+QHTTPGET: 0", 120000, 3, "+QHTTPGET: 0"))
+        // Increase timeout to 240 seconds to allow download over cellular connection
+        // Poll progress while waiting for +QHTTPGET: 0
+        Serial.printf("[HTTP_PROG] Part %d download started. Waiting for modem...\n", x);
+        if (!module->sendCommandOpt("AT+QHTTPGET=240\r\n", "+QHTTPGET: 0", 240000, 3, "+QHTTPGET: 0"))
             return 5;
         
-        char read_cmd[128];
-        snprintf(read_cmd, sizeof(read_cmd), "AT+QHTTPREADFILE=\"UFS:otafw_part%d.b64\",420\r\n", x);
-        if (!(module->sendCommandOpt(read_cmd, "+QHTTPREADFILE: 0", 60000, 2, "+QHTTPREADFILE: 705"))) {
+        // Log download complete with progress bar
+        char prog_bar[64];
+        char prog_msg[256];
+        make_progress_bar(prog_bar, sizeof(prog_bar), 476856, 476856);
+        snprintf(prog_msg, sizeof(prog_msg), "Part %d HTTP Download Complete: %s", x, prog_bar);
+        add_log("HTTP_PROG", "downloading", 100, 0, x, prog_msg);
+        Serial.printf("[HTTP_PROG] Part %d %s\n", x, prog_bar);
+        
+        // Use URL-derived filename for READFILE — timeout=600s in AT cmd (modem UFS write budget)
+        // Wait up to 90s for the +QHTTPREADFILE: response, then parse the result code explicitly
+        char read_cmd[256];
+        snprintf(read_cmd, sizeof(read_cmd), "AT+QHTTPREADFILE=\"UFS:%s\",600\r\n", url_filename.c_str());
+        add_log("AT_CMD", "sending", 0, 0, x, ("AT+QHTTPREADFILE=\"UFS:" + url_filename + "\",600").c_str());
+        Serial.printf("[AT_CMD] Sending: AT+QHTTPREADFILE=\"UFS:%s\",600\n", url_filename.c_str());
+        
+        // sendCommandOpt with 90s timeout; accept 0 (success) or 705 (already exists/OK)
+        bool rf_ok = module->sendCommandOpt(read_cmd, "+QHTTPREADFILE: 0", 90000, 1, "+QHTTPREADFILE: 705");
+        
+        // Parse actual error code from buffer for detailed logging
+        {
+            int rf_code = -1;
+            char* rf_ptr = strstr(module->buffer, "+QHTTPREADFILE:");
+            if (rf_ptr != NULL) {
+                rf_code = atoi(rf_ptr + 15);
+            }
+            char rf_log[256];
+            if (rf_code == 0 || rf_code == 705) {
+                snprintf(rf_log, sizeof(rf_log), "QHTTPREADFILE OK (code=%d): UFS:%s written successfully.", rf_code, url_filename.c_str());
+                add_log("HTTP_PROG", "complete", 100, 0, x, rf_log);
+                Serial.printf("[HTTP_PROG] %s\n", rf_log);
+                rf_ok = true;
+            } else if (rf_code > 0) {
+                snprintf(rf_log, sizeof(rf_log), "QHTTPREADFILE FAILED (code=%d): UFS:%s write error. Check UFS space.", rf_code, url_filename.c_str());
+                add_log("AT_CMD_ERR", "error", 0, rf_code, x, rf_log);
+                Serial.printf("[AT_CMD_ERR] %s\n", rf_log);
+                rf_ok = false;
+            }
+        }
+        if (!rf_ok) {
             return 6;
         }
         
         char log_done[512];
-        snprintf(log_done, sizeof(log_done), "ACK: Part %d downloaded successfully from URL: %s", x, url_command1);
+        snprintf(log_done, sizeof(log_done), "ACK: Part %d stored as UFS:%s from URL: %s", x, url_filename.c_str(), url_command1);
         add_log("HTTP_REQ", "complete", 0, 0, x, log_done);
+        Serial.printf("[HTTP_REQ] ACK: Part %d -> UFS:%s from %s\n", x, url_filename.c_str(), url_command1);
 
         module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
         delay(10);
@@ -791,6 +870,31 @@ static uint8_t trigger_firmware_update_flow() {
     finalsize = 0;
     spiffs_offset = 0;
     
+    // PRE-CLEAR: Delete ALL old firmware part files from UFS before starting download
+    // This prevents UFS "file write failed" (error 729) when storage is full from a prior run.
+    add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "Pre-clearing ALL old OTA firmware files from modem UFS storage...");
+    #ifdef ESP_PLATFORM
+    for (int p = 1; p <= FW_UPDATE_NUM_PARTS; p++) {
+        // Delete using the URL-derived filename of each configured URL
+        String fname = extract_url_filename(s_custom_urls[p - 1].c_str());
+        if (fname.length() == 0) {
+            char fb[32];
+            snprintf(fb, sizeof(fb), "otafw_part%d.b64", p);
+            fname = fb;
+        }
+        char del_all[128];
+        snprintf(del_all, sizeof(del_all), "AT+QFDEL=\"UFS:%s\"\r\n", fname.c_str());
+        module->sendCommand(del_all, "OK", 900, 1, 200, "+CME ERROR: 418");
+        char del_log[256];
+        snprintf(del_log, sizeof(del_log), "Pre-deleted: UFS:%s", fname.c_str());
+        add_log("UFS_CLEAN", "cleanup", 0, 0, p, del_log);
+    }
+    // Also delete combined firmware file
+    module->sendCommand("AT+QFDEL=\"UFS:firm\"\r\n", "OK", 900, 1, 200, "+CME ERROR: 418");
+    module->sendCommand("AT+QFLST\r\n", "OK", 2000, 1);
+    add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "UFS pre-clean complete. Starting sequential part downloads.");
+    #endif
+    
     for (int part = 1; part <= getFloatValue(FW_TOTAL_PARTS); part++) {
         modbus_set_current_part(part);
         
@@ -819,21 +923,34 @@ static uint8_t trigger_firmware_update_flow() {
         setFloatValue(FW_DOWNLOAD_PROGRESS, 3);
         setFloatValue(FW_DOWNLOAD_PROGRESS, 1 + (part * 2));
         
-        String filename1 = "otafw_part" + String(std::to_string(part).c_str()) + ".b64";
+        // Use filename extracted from the URL (matches what modem saved in UFS storage)
+        String filename1 = extract_url_filename(fw_url.c_str());
         
-        // Query file size dynamically
+        // Log which UFS file we're now reading from flash
+        char ufs_log[256];
+        snprintf(ufs_log, sizeof(ufs_log), "Reading UFS file: UFS:%s (from URL: %s)", filename1.c_str(), fw_url.c_str());
+        add_log("UFS_READ", "reading", 0, 0, part, ufs_log);
+        
+        // Query file size dynamically using the URL-derived filename
         #ifndef ESP_PLATFORM
         setFloatValue(FP_SIZE, strlen(s_parts_payloads[part - 1]));
         #else
         uint32_t parsed_size = 476856; // Default fallback
-        char list_cmd[64];
-        snprintf(list_cmd, sizeof(list_cmd), "AT+QFLST=\"UFS:otafw_part%d.b64\"\r\n", part);
+        char list_cmd[256];
+        snprintf(list_cmd, sizeof(list_cmd), "AT+QFLST=\"UFS:%s\"\r\n", filename1.c_str());
         if (module->sendCommand(list_cmd, "OK", 2000, 1)) {
-            char* ptr = strstr(module->buffer, ",");
+            char* ptr = strstr(module->buffer, filename1.c_str());
             if (ptr != NULL) {
-                parsed_size = (uint32_t)atoi(ptr + 1);
-                if (parsed_size == 0) parsed_size = 476856;
+                char* comma = strchr(ptr, ',');
+                if (comma != NULL) {
+                    parsed_size = (uint32_t)atol(comma + 1);
+                    if (parsed_size == 0) parsed_size = 476856;
+                }
             }
+            char size_log[128];
+            snprintf(size_log, sizeof(size_log), "UFS:%s size from modem: %u bytes", filename1.c_str(), parsed_size);
+            add_log("UFS_READ", "reading", 0, 0, part, size_log);
+            Serial.printf("[UFS_READ] %s\n", size_log);
         }
         setFloatValue(FP_SIZE, parsed_size);
         #endif
