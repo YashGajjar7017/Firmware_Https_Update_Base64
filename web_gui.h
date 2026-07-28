@@ -766,6 +766,25 @@ const char index_html[] = R"rawhtml(
             </div>
 
             <div class="panel">
+                <div class="panel-title" style="margin-bottom: 20px;">PSRAM Buffer Storage</div>
+                <div style="overflow-x: auto; max-height: 180px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                                <th style="padding: 8px 4px; font-weight: 600;">Buffered Part</th>
+                                <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Size (Bytes)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="psramFilesBody">
+                            <tr>
+                                <td colspan="2" style="padding: 12px 4px; color: var(--text-secondary); text-align: center;">No parts buffered in PSRAM.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="panel">
                 <div class="panel-title">ESP32 System Storage</div>
                 
                 <div style="margin-bottom: 16px;">
@@ -978,6 +997,29 @@ const char index_html[] = R"rawhtml(
                     appendLog(log.timestamp, log.event, log.state, log.progress, log.error, log.part, log.details);
                 });
                 logOffset += data.logs.length;
+            }
+
+            // Update PSRAM Buffer Storage files list
+            const psramTbody = document.getElementById('psramFilesBody');
+            if (psramTbody) {
+                if (data.psram_files && data.psram_files.length > 0) {
+                    psramTbody.innerHTML = '';
+                    data.psram_files.forEach(f => {
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+                        tr.innerHTML = `
+                            <td style="padding: 10px 4px; font-family:'Fira Code', monospace; color:#f59e0b;">${f.name}</td>
+                            <td style="padding: 10px 4px; text-align: right; font-family:'Fira Code', monospace; color:var(--text-primary); font-weight:600;">${f.size.toLocaleString()}</td>
+                        `;
+                        psramTbody.appendChild(tr);
+                    });
+                } else {
+                    psramTbody.innerHTML = `
+                        <tr>
+                            <td colspan="2" style="padding: 12px 4px; color: var(--text-secondary); text-align: center;">No parts buffered in PSRAM.</td>
+                        </tr>
+                    `;
+                }
             }
 
             // 8. Poll storage parameters periodically

@@ -92,14 +92,23 @@ static void add_log(const char* event, const char* state, int progress, int erro
         }
     }
 
+    int active_part = part;
+    if (active_part == 0) {
+        active_part = modbus_get_register(REG_CURRENT_PART);
+    }
+    int active_progress = progress;
+    if (active_progress == 0) {
+        active_progress = modbus_get_register(REG_PROGRESS_PERCENT);
+    }
+
     if (s_log_count < MAX_LOG_ENTRIES) {
         LogEntry& entry = s_log_buffer[s_log_count];
         strncpy(entry.timestamp, time_str, sizeof(entry.timestamp));
         strncpy(entry.event, event, sizeof(entry.event));
         strncpy(entry.state, state, sizeof(entry.state));
-        entry.progress = progress;
+        entry.progress = active_progress;
         entry.error = error_code;
-        entry.part = part;
+        entry.part = active_part;
         strncpy(entry.details, sanitized_details, sizeof(entry.details));
         s_log_count++;
     }
@@ -107,12 +116,12 @@ static void add_log(const char* event, const char* state, int progress, int erro
     // Log to standard output / serial
     #ifdef ESP_PLATFORM
     Serial.printf("{\"timestamp\":\"%s\",\"event\":\"%s\",\"state\":\"%s\",\"progress\":%d,\"error_code\":%d,\"part\":%d,\"details\":\"%s\"}\n",
-                  time_str, event, state, progress, error_code, part, sanitized_details);
+                  time_str, event, state, active_progress, error_code, active_part, sanitized_details);
     Serial.printf("[OTA LOG] [%s] %s | State: %s | Progress: %d%% | Error: %d | Part: %d\r\n",
-                  event, sanitized_details, state, progress, error_code, part);
+                  event, sanitized_details, state, active_progress, error_code, active_part);
     #else
     printf("{\"timestamp\":\"%s\",\"event\":\"%s\",\"state\":\"%s\",\"progress\":%d,\"error_code\":%d,\"part\":%d,\"details\":\"%s\"}\n",
-           time_str, event, state, progress, error_code, part, sanitized_details);
+           time_str, event, state, active_progress, error_code, active_part, sanitized_details);
     fflush(stdout);
     #endif
 }
@@ -355,12 +364,36 @@ public:
                 }
             }
             if (strstr(buffer, expected_resp) != NULL || (alternative_resp && strstr(buffer, alternative_resp) != NULL)) {
-                Serial.printf("[GSM RECV] %s\r\n", buffer);
+                if (strlen(buffer) > 200) {
+                    char truncated[256];
+                    strncpy(truncated, buffer, 100);
+                    truncated[100] = '\0';
+                    strcat(truncated, " ... [TRUNCATED] ... ");
+                    size_t len = strlen(buffer);
+                    if (len > 150) {
+                        strcat(truncated, buffer + len - 50);
+                    }
+                    Serial.printf("[GSM RECV] %s\r\n", truncated);
+                } else {
+                    Serial.printf("[GSM RECV] %s\r\n", buffer);
+                }
                 return true;
             }
             delay(10);
         }
-        Serial.printf("[GSM RECV TIMEOUT] Expected: %s. Got: %s\r\n", expected_resp, buffer);
+        if (strlen(buffer) > 200) {
+            char truncated[256];
+            strncpy(truncated, buffer, 100);
+            truncated[100] = '\0';
+            strcat(truncated, " ... [TRUNCATED] ... ");
+            size_t len = strlen(buffer);
+            if (len > 150) {
+                strcat(truncated, buffer + len - 50);
+            }
+            Serial.printf("[GSM RECV TIMEOUT] Expected: %s. Got: %s\r\n", expected_resp, truncated);
+        } else {
+            Serial.printf("[GSM RECV TIMEOUT] Expected: %s. Got: %s\r\n", expected_resp, buffer);
+        }
         char err_details[512];
         snprintf(err_details, sizeof(err_details), "AT CMD Timeout. Got: %s", buffer);
         for (int i = 0; err_details[i] != '\0'; i++) {
@@ -704,45 +737,150 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     
     if (read_len > 0) {
         memcpy(buff, part_payload + spiffs_offset, read_len);
+        spiffs_offset += read_len;
     }
     return read_len;
     #else
     // ESP32 Hardware Mode
-    int length1;
     char cmd[100];
     sprintf(cmd, FTP_FILE_READ, handle, length);
-    // Increase timeout to 5000ms to allow secure reading/transmission over UART
-    if (module->sendCommand(cmd, "OK", 5000, 2)) {
-        unsigned char *tcp = NULL;
-        char len[8] = {0};
-        uint8_t j = 0;
-        tcp = (unsigned char *)strstr((char *)module->buffer, "CONNECT");
-        if (tcp != NULL) {
-            tcp = tcp + 8;
-            while (*tcp != '\r') {
-                len[j++] = (char)*tcp;
-                tcp++;
-                if (j > 7) return -1;
+    
+    // Clear Serial1 RX buffer
+    while (Serial1.available()) {
+        Serial1.read();
+    }
+    
+    // Send read command
+    Serial1.print(cmd);
+    Serial.printf("[GSM SEND] %s", cmd);
+    
+    // 1. Read until "CONNECT" is received
+    uint32_t start_time = millis();
+    char connect_buf[32] = {0};
+    int c_idx = 0;
+    bool found_connect = false;
+    
+    while (millis() - start_time < 5000) {
+        if (Serial1.available()) {
+            char c = Serial1.read();
+            if (c_idx < (int)sizeof(connect_buf) - 1) {
+                connect_buf[c_idx++] = c;
+                connect_buf[c_idx] = '\0';
             }
-            length1 = atoi(len);
-            if (length1 == 0) return length1;
-            tcp = tcp + 2;
-            unsigned char *eod = NULL;
-            eod = (unsigned char *)strstr((char *)module->buffer, "\r\nOK");
-            if (length1 > length) return -2;
-            for (int i = 0; i < length1; i++) {
-                if (tcp == eod) return i;
-                buff[i] = *tcp;
-                tcp++;
+            if (strstr(connect_buf, "CONNECT") != NULL) {
+                found_connect = true;
+                break;
             }
-            return length1;
+        }
+        delay(1);
+    }
+    
+    if (!found_connect) {
+        Serial.printf("[ERROR] QFREAD: CONNECT not found. Buffer: %s\r\n", connect_buf);
+        return 0;
+    }
+    
+    // 2. Read space after CONNECT, then the length digits until '\r'
+    char len_buf[16] = {0};
+    int l_idx = 0;
+    start_time = millis();
+    bool found_cr = false;
+    
+    // Skip any leading whitespace/space after CONNECT
+    char c = '\0';
+    while (millis() - start_time < 2000) {
+        if (Serial1.available()) {
+            c = Serial1.read();
+            if (c != ' ' && c != '\r' && c != '\n') {
+                len_buf[l_idx++] = c;
+                break;
+            }
         }
     }
-    return 0;
+    
+    while (millis() - start_time < 2000) {
+        if (Serial1.available()) {
+            c = Serial1.read();
+            if (c == '\r') {
+                found_cr = true;
+                break;
+            }
+            if (l_idx < (int)sizeof(len_buf) - 1) {
+                len_buf[l_idx++] = c;
+            }
+        }
+    }
+    
+    if (!found_cr) {
+        Serial.println("[ERROR] QFREAD: CR after CONNECT length not found");
+        return 0;
+    }
+    
+    int length1 = atoi(len_buf);
+    if (length1 < 0 || length1 > length) {
+        Serial.printf("[ERROR] QFREAD: invalid parsed length %d\r\n", length1);
+        return -2;
+    }
+    
+    // Read '\n' that follows '\r'
+    start_time = millis();
+    while (millis() - start_time < 1000) {
+        if (Serial1.available()) {
+            c = Serial1.read();
+            if (c == '\n') break;
+        }
+    }
+    
+    // 3. Read exactly length1 bytes into buff
+    int bytes_read = 0;
+    start_time = millis();
+    while (bytes_read < length1 && (millis() - start_time < 5000)) {
+        if (Serial1.available()) {
+            buff[bytes_read++] = Serial1.read();
+        } else {
+            delay(1);
+        }
+    }
+    
+    if (bytes_read < length1) {
+        Serial.printf("[ERROR] QFREAD: timeout reading data. Expected %d, got %d\r\n", length1, bytes_read);
+        return 0;
+    }
+    
+    // 4. Read trailing \r\nOK\r\n
+    char trailing[32] = {0};
+    int t_idx = 0;
+    start_time = millis();
+    bool found_ok = false;
+    while (millis() - start_time < 2000) {
+        if (Serial1.available()) {
+            c = Serial1.read();
+            if (t_idx < (int)sizeof(trailing) - 1) {
+                trailing[t_idx++] = c;
+                trailing[t_idx] = '\0';
+            }
+            if (strstr(trailing, "OK") != NULL) {
+                found_ok = true;
+                break;
+            }
+        }
+        delay(1);
+    }
+    
+    Serial.printf("[GSM RECV] CONNECT %d ... OK\r\n", length1);
+    return length1;
     #endif
 }
 
 uint8_t qftp::qftp_file_seek(int handle, int offset, uint8_t mode) {
+    #ifndef ESP_PLATFORM
+    if (mode == 0) { // SEEK_SET
+        spiffs_offset = offset;
+    } else if (mode == 1) { // SEEK_CUR
+        spiffs_offset += offset;
+    }
+    return 1;
+    #else
     char cmd[100];
     sprintf(cmd, FTP_FILE_SEEK, handle, offset, mode);
     // Remove redundant AT+QFPOSITION commands and just execute seek
@@ -750,11 +888,13 @@ uint8_t qftp::qftp_file_seek(int handle, int offset, uint8_t mode) {
         return 1;
     }
     return 0;
+    #endif
 }
 
 static uint8_t* s_psram_base64_buffer = NULL;
 static size_t s_psram_base64_capacity = 0;
 static size_t s_psram_base64_length = 0;
+static size_t s_psram_part_sizes[FW_UPDATE_NUM_PARTS] = {0};
 
 static void clean_psram_buffer() {
     if (s_psram_base64_buffer != NULL) {
@@ -767,6 +907,9 @@ static void clean_psram_buffer() {
     }
     s_psram_base64_capacity = 0;
     s_psram_base64_length = 0;
+    for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
+        s_psram_part_sizes[i] = 0;
+    }
 }
 
 static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
@@ -900,8 +1043,20 @@ uint8_t decode_and_flash_psram() {
         );
         
         if (ret != 0) {
-            Serial.println("Base64 decoding failed during final flash!");
-            add_log("ota_flash", "error", 0, ERR_BASE64_DECODE, 0, "Base64 decoding of PSRAM buffer failed!");
+            Serial.printf("Base64 decoding failed during final flash! Code: %d, Offset: %u\r\n", ret, (unsigned int)processed_b64);
+            char snippet[65] = {0};
+            size_t snippet_len = (s_psram_base64_length - processed_b64 > 60) ? 60 : (s_psram_base64_length - processed_b64);
+            if (snippet_len > 0) {
+                memcpy(snippet, s_psram_base64_buffer + processed_b64, snippet_len);
+                snippet[snippet_len] = '\0';
+            }
+            Serial.printf("[ERROR] Failing Base64 snippet: %s\r\n", snippet);
+
+            char err_details[256];
+            snprintf(err_details, sizeof(err_details), "Base64 decode failed at offset %u (code=%d). Snippet: %s", 
+                     (unsigned int)processed_b64, ret, snippet);
+            add_log("ota_flash", "error", 0, ERR_BASE64_DECODE, 0, err_details);
+            
             setFloatValue(ERROR4, 3);
             #ifdef ESP_PLATFORM
             Update.abort();
@@ -1056,12 +1211,29 @@ static uint8_t trigger_firmware_update_flow() {
         #endif
         
         // Copy UFS file contents completely into PSRAM buffer
+        size_t before_len = s_psram_base64_length;
         err_code = read_ufs_file_to_psram(filename1, 6144);
         if (err_code == 0) {
             setFloatValue(FILE_UUID, 0);
             clean_psram_buffer();
             return 0;
         }
+        size_t after_len = s_psram_base64_length;
+        if (part >= 1 && part <= FW_UPDATE_NUM_PARTS) {
+            s_psram_part_sizes[part - 1] = after_len - before_len;
+        }
+        
+        // Log the list of files/parts in PSRAM to console and GUI
+        char psram_list_str[512] = {0};
+        int offset_p = snprintf(psram_list_str, sizeof(psram_list_str), "PSRAM buffered parts: ");
+        for (int p_idx = 0; p_idx < FW_UPDATE_NUM_PARTS; p_idx++) {
+            if (s_psram_part_sizes[p_idx] > 0) {
+                offset_p += snprintf(psram_list_str + offset_p, sizeof(psram_list_str) - offset_p,
+                                     "[Part %d: %d bytes] ", p_idx + 1, (int)s_psram_part_sizes[p_idx]);
+            }
+        }
+        add_log("PSRAM_LIST", "buffering", 2 + (part * 2), 0, part, psram_list_str);
+        Serial.printf("[OTA LOG] %s\r\n", psram_list_str);
         
         // Immediately delete downloaded part file from GPRS storage to free up UFS space
         #ifdef ESP_PLATFORM
@@ -1163,7 +1335,17 @@ static void handle_status() {
         json += "      \"details\": \"" + String(s_log_buffer[i].details) + "\"\n";
         json += "    }" + String(i == s_log_count - 1 ? "" : ",") + "\n";
     }
-    json += "  ]\n";
+    json += "  ],\n";
+    json += "  \"psram_files\": [\n";
+    bool first_file = true;
+    for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
+        if (s_psram_part_sizes[i] > 0) {
+            if (!first_file) json += ",\n";
+            json += "    {\"name\": \"PSRAM:otafw_part" + String(i + 1) + ".b64\", \"size\": " + String(s_psram_part_sizes[i]) + "}";
+            first_file = false;
+        }
+    }
+    json += "\n  ]\n";
     json += "}";
     server.send(200, "application/json", json);
 }
@@ -1621,7 +1803,17 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                      << "      \"details\": \"" << s_log_buffer[i].details << "\"\n"
                      << "    }" << (i == s_log_count - 1 ? "" : ",") << "\n";
             }
-            json << "  ]\n"
+            json << "  ],\n"
+                 << "  \"psram_files\": [\n";
+            bool first_file = true;
+            for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
+                if (s_psram_part_sizes[i] > 0) {
+                    if (!first_file) json << ",\n";
+                    json << "    {\"name\": \"PSRAM:otafw_part" << (i + 1) << ".b64\", \"size\": " << s_psram_part_sizes[i] << "}";
+                    first_file = false;
+                }
+            }
+            json << "\n  ]\n"
                  << "}";
             
             std::string body = json.str();
