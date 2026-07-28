@@ -1157,20 +1157,116 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
     return 1;
 }
 
+// ---------------------------------------------------------------------------
+// sanitize_psram_base64()
+// ---------------------------------------------------------------------------
+// Strips every character from the PSRAM base64 buffer that is NOT a valid
+// standard base64 alphabet character (A-Z a-z 0-9 + / =).
+// Also removes internal '=' padding: the '=' character is only valid at the
+// very END of a full base64 stream.  When 4 parts are concatenated, parts
+// 1-3 each end with one or two '=' padding chars.  Leaving those internal
+// '=' characters in the stream makes mbedtls fail with -44 when the decoder
+// sees more data after a padding marker.
+//
+// Returns the number of bytes removed (stripped).
+static size_t sanitize_psram_base64() {
+    if (s_psram_base64_buffer == NULL || s_psram_base64_length == 0) return 0;
+    
+    const uint8_t* src = s_psram_base64_buffer;
+    uint8_t*       dst = s_psram_base64_buffer; // write in-place
+    size_t         src_len = s_psram_base64_length;
+    size_t         dst_len = 0;
+    size_t         stripped = 0;
+    uint8_t        invalid_examples[8] = {0}; // first 8 stripped non-whitespace chars
+    int            invalid_count = 0;
+    
+    for (size_t i = 0; i < src_len; i++) {
+        uint8_t c = src[i];
+        bool valid = (c >= 'A' && c <= 'Z') ||
+                     (c >= 'a' && c <= 'z') ||
+                     (c >= '0' && c <= '9') ||
+                     c == '+' || c == '/';
+        // '=' is only kept if it will end up at the very end
+        // (we handle this by NOT copying '=' now; we'll add trailing '=' back after)
+        if (valid) {
+            dst[dst_len++] = c;
+        } else {
+            // Track non-whitespace invalid chars for diagnostic
+            if (c != '\r' && c != '\n' && c != ' ' && c != '\t' && c != '=' && c != '\0') {
+                if (invalid_count < (int)sizeof(invalid_examples)) {
+                    invalid_examples[invalid_count++] = c;
+                }
+            }
+            stripped++;
+        }
+    }
+    
+    // Figure out correct trailing padding: decoded data length must be
+    // reconstructed from dst_len (number of base64 data chars).
+    // dst_len mod 4 tells us how many '=' to append:
+    //   dst_len % 4 == 0 → no padding needed
+    //   dst_len % 4 == 2 → append "=="
+    //   dst_len % 4 == 3 → append "="
+    int remainder = (int)(dst_len % 4);
+    if (remainder == 2) {
+        dst[dst_len++] = '=';
+        dst[dst_len++] = '=';
+    } else if (remainder == 3) {
+        dst[dst_len++] = '=';
+    }
+    
+    s_psram_base64_length = dst_len;
+    
+    // Log diagnostic
+    char san_log[256];
+    if (invalid_count > 0) {
+        // Build hex string of invalid chars
+        char hex_str[32] = {0};
+        for (int k = 0; k < invalid_count && k < 8; k++) {
+            snprintf(hex_str + k * 3, sizeof(hex_str) - k * 3, "%02X ", invalid_examples[k]);
+        }
+        snprintf(san_log, sizeof(san_log),
+                 "Sanitized PSRAM: stripped %u bytes (incl. %d non-whitespace invalid chars: %s). Clean length: %u bytes",
+                 (uint32_t)stripped, invalid_count, hex_str, (uint32_t)dst_len);
+    } else {
+        snprintf(san_log, sizeof(san_log),
+                 "Sanitized PSRAM: stripped %u whitespace/padding bytes. Clean length: %u bytes",
+                 (uint32_t)stripped, (uint32_t)dst_len);
+    }
+    add_log("B64_CLEAN", "sanitizing", 12, OTA_ERR_NONE, 0, san_log);
+    Serial.printf("[B64_CLEAN] %s\r\n", san_log);
+    
+    return stripped;
+}
+
 uint8_t decode_and_flash_psram() {
     add_log("ota_flash", "decoding", 0, 0, 0, "All base64 files loaded into PSRAM. Starting decode & OTA flash...");
     modbus_set_status(STATUS_DECODING);
-    setFloatValue(FW_DOWNLOAD_PROGRESS, 10.0f); // status value for decoding/flashing
+    setFloatValue(FW_DOWNLOAD_PROGRESS, 10.0f);
+    
+    // ── Step 1: Sanitize ────────────────────────────────────────────────────
+    // Strip \r \n \0 stray control chars and inter-part '=' padding.
+    // This is the fix for -44 (MBEDTLS_ERR_BASE64_INVALID_CHARACTER) caused
+    // by lone \r characters in the line-wrapped .b64 files AND by '=' padding
+    // in the middle of the concatenated multi-part stream.
+    size_t stripped_bytes = sanitize_psram_base64();
+    if (s_psram_base64_length == 0) {
+        add_log("ota_flash", "error", 0, OTA_ERR_B64_DECODE, 0,
+                "[ERR] PSRAM buffer empty after sanitization! Cannot decode.");
+        return 0;
+    }
+    Serial.printf("[B64_CLEAN] After sanitize: %u usable base64 chars (%u stripped)\r\n",
+                  (uint32_t)s_psram_base64_length, (uint32_t)stripped_bytes);
 
     #ifdef ESP_PLATFORM
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
         setFloatValue(ERROR4, 7);
         Update.printError(Serial);
-        add_log("ota_flash", "error", 0, ERR_OTA_FLASH, 0, "Failed to initialize OTA partition!");
+        add_log("ota_flash", "error", 0, OTA_ERR_UPDATE_BEGIN, 0, "[ERR] Failed to initialize OTA partition!");
         return 0;
     }
     #else
-    Update.begin(108); // Simulate binary size
+    Update.begin(108);
     #endif
 
     static uint8_t decode_temp_buf[8192];
@@ -1197,19 +1293,82 @@ uint8_t decode_and_flash_psram() {
         );
         
         if (ret != 0) {
-            Serial.printf("Base64 decoding failed during final flash! Code: %d, Offset: %u\r\n", ret, (unsigned int)processed_b64);
-            char snippet[65] = {0};
-            size_t snippet_len = (s_psram_base64_length - processed_b64 > 60) ? 60 : (s_psram_base64_length - processed_b64);
-            if (snippet_len > 0) {
-                memcpy(snippet, s_psram_base64_buffer + processed_b64, snippet_len);
-                snippet[snippet_len] = '\0';
+            // ── Detailed base64 decode failure diagnostic ────────────────────
+            // Scan the failing chunk to find the first invalid character
+            const uint8_t* fchunk = s_psram_base64_buffer + processed_b64;
+            uint8_t  bad_char    = 0;
+            size_t   bad_offset  = 0;
+            bool     found_bad   = false;
+            for (size_t ci = 0; ci < chunk_chars; ci++) {
+                uint8_t ch = fchunk[ci];
+                bool is_valid = (ch >= 'A' && ch <= 'Z') ||
+                                (ch >= 'a' && ch <= 'z') ||
+                                (ch >= '0' && ch <= '9') ||
+                                ch == '+' || ch == '/' || ch == '=';
+                if (!is_valid) {
+                    bad_char   = ch;
+                    bad_offset = ci;
+                    found_bad  = true;
+                    break;
+                }
             }
-            Serial.printf("[ERROR] Failing Base64 snippet: %s\r\n", snippet);
-
+            
+            // Determine which part this offset falls in
+            size_t part_boundary = 0;
+            int    bad_part      = 0;
+            for (int pi = 0; pi < FW_UPDATE_NUM_PARTS; pi++) {
+                part_boundary += s_psram_part_sizes[pi];
+                if (processed_b64 < part_boundary) {
+                    bad_part = pi + 1;
+                    break;
+                }
+            }
+            
+            Serial.printf("[B64_ERR] Decode FAILED: code=%d, chunk_offset=%u, total_offset=%u\r\n",
+                          ret, (uint32_t)processed_b64, (uint32_t)processed_b64);
+            if (found_bad) {
+                Serial.printf("[B64_ERR] First invalid char: 0x%02X ('%c') at chunk+%u (global %u) in Part %d\r\n",
+                              bad_char,
+                              (bad_char >= 0x20 && bad_char < 0x7F) ? (char)bad_char : '?',
+                              (uint32_t)bad_offset,
+                              (uint32_t)(processed_b64 + bad_offset),
+                              bad_part);
+                // Print 8 bytes of hex context around the bad char
+                size_t ctx_start = (bad_offset >= 8) ? bad_offset - 8 : 0;
+                Serial.printf("[B64_ERR] Context (hex): ");
+                for (size_t ci = ctx_start; ci < bad_offset + 8 && ci < chunk_chars; ci++) {
+                    if (ci == bad_offset) Serial.print("[>");
+                    Serial.printf("%02X ", fchunk[ci]);
+                    if (ci == bad_offset) Serial.print("<] ");
+                }
+                Serial.println();
+            } else {
+                Serial.printf("[B64_ERR] No single invalid char found — possible length/padding issue.\r\n");
+            }
+            
+            // Also print first 60 printable chars of the chunk
+            char snippet[65] = {0};
+            size_t sn = 0;
+            for (size_t ci = 0; ci < chunk_chars && sn < 60; ci++) {
+                uint8_t ch = fchunk[ci];
+                if (ch >= 0x20 && ch < 0x7F) snippet[sn++] = (char)ch;
+                else { snippet[sn++] = '['; snippet[sn++] = '?'; snippet[sn++] = ']'; }
+                if (sn >= 60) break;
+            }
+            snippet[sn] = '\0';
+            Serial.printf("[B64_ERR] Printable chunk start: %s\r\n", snippet);
+            
             char err_details[256];
-            snprintf(err_details, sizeof(err_details), "Base64 decode failed at offset %u (code=%d). Snippet: %s", 
-                     (unsigned int)processed_b64, ret, snippet);
-            add_log("ota_flash", "error", 0, ERR_BASE64_DECODE, 0, err_details);
+            if (found_bad) {
+                snprintf(err_details, sizeof(err_details),
+                         "[ERR %d] B64 decode fail at global offset %u: invalid char 0x%02X at chunk+%u (Part %d)",
+                         OTA_ERR_B64_DECODE, (uint32_t)processed_b64, bad_char, (uint32_t)bad_offset, bad_part);
+            } else {
+                snprintf(err_details, sizeof(err_details),
+                         "[ERR %d] B64 decode fail at global offset %u: code=%d, no single invalid char found",
+                         OTA_ERR_B64_DECODE, (uint32_t)processed_b64, ret);
+            }
+            add_log("ota_flash", "error", 0, OTA_ERR_B64_DECODE, bad_part, err_details);
             
             setFloatValue(ERROR4, 3);
             #ifdef ESP_PLATFORM

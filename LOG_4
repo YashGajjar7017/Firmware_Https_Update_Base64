@@ -1,0 +1,1057 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+E (173) esp_core_dump_flash: No core dump partition found!
+E (173) esp_core_dump_flash: No core dump partition found!
+AP IP address: 192.168.4.1
+HTTP Server started on Port 80
+{"timestamp":"1970-01-01T00:00:12","event":"ota_flash","state":"initializing","progress":5,"error_code":0,"part":0,"details":"Initializing OTA update flashing session..."}
+[OTA LOG] [ota_flash] Initializing OTA update flashing session... | State: initializing | Progress: 5% | Error: 0 | Part: 0
+{"timestamp":"1970-01-01T00:00:12","event":"PSRAM_ALLOC","state":"ready","progress":2,"error_code":0,"part":0,"details":"PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts"}
+[OTA LOG] [PSRAM_ALLOC] PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts | State: ready | Progress: 2% | Error: 0 | Part: 0
+[PSRAM] PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts
+{"timestamp":"1970-01-01T00:00:12","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"Pre-clearing ALL old OTA firmware files from modem UFS storage..."}
+[OTA LOG] [UFS_CLEAN] Pre-clearing ALL old OTA firmware files from modem UFS storage... | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:12","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Pre-clean: UFS:otafw_part1.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part1.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:12","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":2,"details":"Pre-clean: UFS:otafw_part2.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part2.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 2
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:12","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":3,"details":"Pre-clean: UFS:otafw_part3.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part3.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 3
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:12","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":4,"details":"Pre-clean: UFS:otafw_part4.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part4.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 4
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"UFS pre-clean complete. Starting sequential part downloads."}
+[OTA LOG] [UFS_CLEAN] UFS pre-clean complete. Starting sequential part downloads. | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:13","event":"UFS_DEL","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Cleared old UFS file: UFS:otafw_part1.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part1.b64 before re-download. | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:00:13","event":"HTTP_REQ","state":"requesting","progress":10,"error_code":0,"part":1,"details":"HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64 | State: requesting | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part1.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 1 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:00:14","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":1,"details":"Part 1 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 1 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 1
+[HTTP_PROG] Part 1 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:00:14","event":"AT_CMD","state":"sending","progress":10,"error_code":0,"part":1,"details":"AT+QHTTPREADFILE='UFS:otafw_part1.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part1.b64',600 | State: sending | Progress: 10% | Error: 0 | Part: 1
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part1.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part1.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:00:20","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":1,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 1
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully.
+{"timestamp":"1970-01-01T00:00:20","event":"HTTP_REQ","state":"complete","progress":10,"error_code":0,"part":1,"details":"ACK: Part 1 stored as UFS:otafw_part1.b64 from URL: http://64.251.10.159/otafw_part1.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 1 stored as UFS:otafw_part1.b64 from URL: http://64.251.10.159/otafw_part1.b64 | State: complete | Progress: 10% | Error: 0 | Part: 1
+[HTTP_REQ] ACK: Part 1 -> UFS:otafw_part1.b64 from http://64.251.10.159/otafw_part1.b64
+return value: 0
+{"timestamp":"1970-01-01T00:00:20","event":"UFS_READ","state":"reading","progress":5,"error_code":0,"part":1,"details":"Reading UFS file: UFS:otafw_part1.b64 (from URL: http://64.251.10.159/otafw_part1.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part1.b64 (from URL: http://64.251.10.159/otafw_part1.b64) | State: reading | Progress: 5% | Error: 0 | Part: 1
+[GSM SEND] AT+QFLST="UFS:otafw_part1.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part1.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:00:20","event":"UFS_READ","state":"reading","progress":5,"error_code":0,"part":1,"details":"UFS:otafw_part1.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part1.b64 size from modem: 476856 bytes | State: reading | Progress: 5% | Error: 0 | Part: 1
+[UFS_READ] UFS:otafw_part1.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part1.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 1
+  |====>                                   | (64KB/465KB) Part 1
+  |=======>                                | (96KB/465KB) Part 1
+  |=========>                              | (128KB/465KB) Part 1
+  |============>                           | (160KB/465KB) Part 1
+  |===============>                        | (192KB/465KB) Part 1
+  |==================>                     | (224KB/465KB) Part 1
+  |====================>                   | (256KB/465KB) Part 1
+  |=======================>                | (288KB/465KB) Part 1
+  |==========================>             | (320KB/465KB) Part 1
+  |=============================>          | (352KB/465KB) Part 1
+  |===============================>        | (384KB/465KB) Part 1
+  |==================================>     | (416KB/465KB) Part 1
+  |=====================================>  | (448KB/465KB) Part 1
+  |=======================================>| (465KB/465KB) Part 1
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 1 complete. PSRAM total: 476856 bytes
+{"timestamp":"1970-01-01T00:01:06","event":"PSRAM_LIST","state":"buffering","progress":4,"error_code":0,"part":1,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes]  | State: buffering | Progress: 4% | Error: 0 | Part: 1
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:01:07","event":"UFS_DEL","state":"cleanup","progress":25,"error_code":0,"part":2,"details":"Cleared old UFS file: UFS:otafw_part2.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part2.b64 before re-download. | State: cleanup | Progress: 25% | Error: 0 | Part: 2
+{"timestamp":"1970-01-01T00:01:07","event":"HTTP_REQ","state":"requesting","progress":25,"error_code":0,"part":2,"details":"HTTP GET: http://64.251.10.159/otafw_part2.b64 -> Saving as UFS:otafw_part2.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part2.b64 -> Saving as UFS:otafw_part2.b64 | State: requesting | Progress: 25% | Error: 0 | Part: 2
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part2.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 2 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:01:08","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":2,"details":"Part 2 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 2 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 2
+[HTTP_PROG] Part 2 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:01:08","event":"AT_CMD","state":"sending","progress":25,"error_code":0,"part":2,"details":"AT+QHTTPREADFILE='UFS:otafw_part2.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part2.b64',600 | State: sending | Progress: 25% | Error: 0 | Part: 2
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part2.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part2.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:01:14","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":2,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 2
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully.
+{"timestamp":"1970-01-01T00:01:15","event":"HTTP_REQ","state":"complete","progress":25,"error_code":0,"part":2,"details":"ACK: Part 2 stored as UFS:otafw_part2.b64 from URL: http://64.251.10.159/otafw_part2.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 2 stored as UFS:otafw_part2.b64 from URL: http://64.251.10.159/otafw_part2.b64 | State: complete | Progress: 25% | Error: 0 | Part: 2
+[HTTP_REQ] ACK: Part 2 -> UFS:otafw_part2.b64 from http://64.251.10.159/otafw_part2.b64
+return value: 0
+{"timestamp":"1970-01-01T00:01:15","event":"UFS_READ","state":"reading","progress":30,"error_code":0,"part":2,"details":"Reading UFS file: UFS:otafw_part2.b64 (from URL: http://64.251.10.159/otafw_part2.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part2.b64 (from URL: http://64.251.10.159/otafw_part2.b64) | State: reading | Progress: 30% | Error: 0 | Part: 2
+[GSM SEND] AT+QFLST="UFS:otafw_part2.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part2.b64",76856
+
+OK
+
+{"timestamp":"1970-01-01T00:01:15","event":"UFS_READ","state":"reading","progress":30,"error_code":0,"part":2,"details":"UFS:otafw_part2.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part2.b64 size from modem: 476856 bytes | State: reading | Progress: 30% | Error: 0 | Part: 2
+[UFS_READ] UFS:otafw_part2.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part2.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 2
+  |====>                                   | (64KB/465KB) Part 2
+  |=======>                                | (96KB/465KB) Part 2
+  |=========>                              | (128KB/465KB) Part 2
+  |============>                           | (160KB/465KB) Part 2
+  |===============>                        | (192KB/465KB) Part 2
+  |==================>                     | (224KB/465KB) Part 2
+  |====================>                   | (256KB/465KB) Part 2
+  |=======================>                | (288KB/465KB) Part 2
+  |==========================>             | (320KB/465KB) Part 2
+  |=============================>          | (352KB/465KB) Part 2
+  |===============================>        | (384KB/465KB) Part 2
+  |==================================>     | (416KB/465KB) Part 2
+  |=====================================>  | (448KB/465KB) Part 2
+  |=======================================>| (465KB/465KB) Part 2
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 2 complete. PSRAM total: 953712 bytes
+{"timestamp":"1970-01-01T00:01:59","event":"PSRAM_LIST","state":"buffering","progress":6,"error_code":0,"part":2,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes]  | State: buffering | Progress: 6% | Error: 0 | Part: 2
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:01:59","event":"UFS_DEL","state":"cleanup","progress":50,"error_code":0,"part":3,"details":"Cleared old UFS file: UFS:otafw_part3.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part3.b64 before re-download. | State: cleanup | Progress: 50% | Error: 0 | Part: 3
+{"timestamp":"1970-01-01T00:01:59","event":"HTTP_REQ","state":"requesting","progress":50,"error_code":0,"part":3,"details":"HTTP GET: http://64.251.10.159/otafw_part3.b64 -> Saving as UFS:otafw_part3.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part3.b64 -> Saving as UFS:otafw_part3.b64 | State: requesting | Progress: 50% | Error: 0 | Part: 3
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part3.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 3 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:02:00","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":3,"details":"Part 3 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 3 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 3
+[HTTP_PROG] Part 3 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:02:00","event":"AT_CMD","state":"sending","progress":50,"error_code":0,"part":3,"details":"AT+QHTTPREADFILE='UFS:otafw_part3.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part3.b64',600 | State: sending | Progress: 50% | Error: 0 | Part: 3
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part3.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part3.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:02:07","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":3,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 3
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully.
+{"timestamp":"1970-01-01T00:02:07","event":"HTTP_REQ","state":"complete","progress":50,"error_code":0,"part":3,"details":"ACK: Part 3 stored as UFS:otafw_part3.b64 from URL: http://64.251.10.159/otafw_part3.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 3 stored as UFS:otafw_part3.b64 from URL: http://64.251.10.159/otafw_part3.b64 | State: complete | Progress: 50% | Error: 0 | Part: 3
+[HTTP_REQ] ACK: Part 3 -> UFS:otafw_part3.b64 from http://64.251.10.159/otafw_part3.b64
+return value: 0
+{"timestamp":"1970-01-01T00:02:07","event":"UFS_READ","state":"reading","progress":55,"error_code":0,"part":3,"details":"Reading UFS file: UFS:otafw_part3.b64 (from URL: http://64.251.10.159/otafw_part3.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part3.b64 (from URL: http://64.251.10.159/otafw_part3.b64) | State: reading | Progress: 55% | Error: 0 | Part: 3
+[GSM SEND] AT+QFLST="UFS:otafw_part3.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part3.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:02:07","event":"UFS_READ","state":"reading","progress":55,"error_code":0,"part":3,"details":"UFS:otafw_part3.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part3.b64 size from modem: 476856 bytes | State: reading | Progress: 55% | Error: 0 | Part: 3
+[UFS_READ] UFS:otafw_part3.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part3.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 3
+  |====>                                   | (64KB/465KB) Part 3
+  |=======>                                | (96KB/465KB) Part 3
+  |=========>                              | (128KB/465KB) Part 3
+  |============>                           | (160KB/465KB) Part 3
+  |===============>                        | (192KB/465KB) Part 3
+  |==================>                     | (224KB/465KB) Part 3
+  |====================>                   | (256KB/465KB) Part 3
+  |=======================>                | (288KB/465KB) Part 3
+  |==========================>             | (320KB/465KB) Part 3
+  |=============================>          | (352KB/465KB) Part 3
+  |===============================>        | (384KB/465KB) Part 3
+  |==================================>     | (416KB/465KB) Part 3
+  |=====================================>  | (448KB/465KB) Part 3
+  |=======================================>| (465KB/465KB) Part 3
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 3 complete. PSRAM total: 1430568 bytes
+{"timestamp":"1970-01-01T00:02:51","event":"PSRAM_LIST","state":"buffering","progress":8,"error_code":0,"part":3,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes]  | State: buffering | Progress: 8% | Error: 0 | Part: 3
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:02:52","event":"UFS_DEL","state":"cleanup","progress":75,"error_code":0,"part":4,"details":"Cleared old UFS file: UFS:otafw_part4.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part4.b64 before re-download. | State: cleanup | Progress: 75% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:02:52","event":"HTTP_REQ","state":"requesting","progress":75,"error_code":0,"part":4,"details":"HTTP GET: http://64.251.10.159/otafw_part4.b64 -> Saving as UFS:otafw_part4.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part4.b64 -> Saving as UFS:otafw_part4.b64 | State: requesting | Progress: 75% | Error: 0 | Part: 4
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part4.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 4 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:02:53","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":4,"details":"Part 4 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 4 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 4
+[HTTP_PROG] Part 4 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:02:53","event":"AT_CMD","state":"sending","progress":75,"error_code":0,"part":4,"details":"AT+QHTTPREADFILE='UFS:otafw_part4.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part4.b64',600 | State: sending | Progress: 75% | Error: 0 | Part: 4
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part4.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part4.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:02:59","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":4,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 4
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully.
+{"timestamp":"1970-01-01T00:02:59","event":"HTTP_REQ","state":"complete","progress":75,"error_code":0,"part":4,"details":"ACK: Part 4 stored as UFS:otafw_part4.b64 from URL: http://64.251.10.159/otafw_part4.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 4 stored as UFS:otafw_part4.b64 from URL: http://64.251.10.159/otafw_part4.b64 | State: complete | Progress: 75% | Error: 0 | Part: 4
+[HTTP_REQ] ACK: Part 4 -> UFS:otafw_part4.b64 from http://64.251.10.159/otafw_part4.b64
+return value: 0
+{"timestamp":"1970-01-01T00:02:59","event":"UFS_READ","state":"reading","progress":80,"error_code":0,"part":4,"details":"Reading UFS file: UFS:otafw_part4.b64 (from URL: http://64.251.10.159/otafw_part4.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part4.b64 (from URL: http://64.251.10.159/otafw_part4.b64) | State: reading | Progress: 80% | Error: 0 | Part: 4
+[GSM SEND] AT+QFLST="UFS:otafw_part4.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part4.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:02:59","event":"UFS_READ","state":"reading","progress":80,"error_code":0,"part":4,"details":"UFS:otafw_part4.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part4.b64 size from modem: 476856 bytes | State: reading | Progress: 80% | Error: 0 | Part: 4
+[UFS_READ] UFS:otafw_part4.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part4.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 4
+  |====>                                   | (64KB/465KB) Part 4
+  |=======>                                | (96KB/465KB) Part 4
+  |=========>                              | (128KB/465KB) Part 4
+  |============>                           | (160KB/465KB) Part 4
+  |===============>                        | (192KB/465KB) Part 4
+  |==================>                     | (224KB/465KB) Part 4
+  |====================>                   | (256KB/465KB) Part 4
+  |=======================>                | (288KB/465KB) Part 4
+  |==========================>             | (320KB/465KB) Part 4
+  |=============================>          | (352KB/465KB) Part 4
+  |===============================>        | (384KB/465KB) Part 4
+  |==================================>     | (416KB/465KB) Part 4
+  |=====================================>  | (448KB/465KB) Part 4
+  |=======================================>| (465KB/465KB) Part 4
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 4 complete. PSRAM total: 1907424 bytes
+{"timestamp":"1970-01-01T00:03:43","event":"PSRAM_LIST","state":"buffering","progress":10,"error_code":0,"part":4,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes]  | State: buffering | Progress: 10% | Error: 0 | Part: 4
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
+OK
+
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"decoding","progress":100,"error_code":0,"part":4,"details":"All base64 files loaded into PSRAM. Starting decode & OTA flash..."}
+[OTA LOG] [ota_flash] All base64 files loaded into PSRAM. Starting decode & OTA flash... | State: decoding | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"B64_CLEAN","state":"sanitizing","progress":12,"error_code":0,"part":4,"details":"Sanitized PSRAM: stripped 36 bytes (incl. 8 non-whitespace invalid chars: 3A 05 0B 0B 15 04 19 12 ). Clean length: 1907388 byte"}
+[OTA LOG] [B64_CLEAN] Sanitized PSRAM: stripped 36 bytes (incl. 8 non-whitespace invalid chars: 3A 05 0B 0B 15 04 19 12 ). Clean length: 1907388 byte | State: sanitizing | Progress: 12% | Error: 0 | Part: 4
+[B64_CLEAN] Sanitized PSRAM: stripped 36 bytes (incl. 8 non-whitespace invalid chars: 3A 05 0B 0B 15 04 19 12 ). Clean length: 1907388 bytes
+[B64_CLEAN] After sanitize: 1907388 usable base64 chars (36 stripped)
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 4608 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 4608 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 9216 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 9216 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 13824 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 13824 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 18432 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 18432 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 23040 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 23040 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 27648 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 27648 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":2,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 32256 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 32256 bytes. | State: flashing | Progress: 2% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":2,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 36864 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 36864 bytes. | State: flashing | Progress: 2% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":2,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 41472 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 41472 bytes. | State: flashing | Progress: 2% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":3,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 46080 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 46080 bytes. | State: flashing | Progress: 3% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":3,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 50688 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 50688 bytes. | State: flashing | Progress: 3% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":3,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 55296 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 55296 bytes. | State: flashing | Progress: 3% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":4,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 59904 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 59904 bytes. | State: flashing | Progress: 4% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":4,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 64512 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 64512 bytes. | State: flashing | Progress: 4% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:44","event":"ota_flash","state":"flashing","progress":4,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 69120 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 69120 bytes. | State: flashing | Progress: 4% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":5,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 73728 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 73728 bytes. | State: flashing | Progress: 5% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":5,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 78336 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 78336 bytes. | State: flashing | Progress: 5% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":5,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 82944 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 82944 bytes. | State: flashing | Progress: 5% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":6,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 87552 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 87552 bytes. | State: flashing | Progress: 6% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":6,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 92160 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 92160 bytes. | State: flashing | Progress: 6% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":6,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 96768 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 96768 bytes. | State: flashing | Progress: 6% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":7,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 101376 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 101376 bytes. | State: flashing | Progress: 7% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":7,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 105984 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 105984 bytes. | State: flashing | Progress: 7% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":7,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 110592 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 110592 bytes. | State: flashing | Progress: 7% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":8,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 115200 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 115200 bytes. | State: flashing | Progress: 8% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":8,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 119808 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 119808 bytes. | State: flashing | Progress: 8% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":8,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 124416 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 124416 bytes. | State: flashing | Progress: 8% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":9,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 129024 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 129024 bytes. | State: flashing | Progress: 9% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":9,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 133632 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 133632 bytes. | State: flashing | Progress: 9% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":9,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 138240 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 138240 bytes. | State: flashing | Progress: 9% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":9,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 142848 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 142848 bytes. | State: flashing | Progress: 9% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":10,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 147456 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 147456 bytes. | State: flashing | Progress: 10% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":10,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 152064 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 152064 bytes. | State: flashing | Progress: 10% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":10,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 156672 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 156672 bytes. | State: flashing | Progress: 10% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:45","event":"ota_flash","state":"flashing","progress":11,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 161280 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 161280 bytes. | State: flashing | Progress: 11% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":11,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 165888 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 165888 bytes. | State: flashing | Progress: 11% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":11,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 170496 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 170496 bytes. | State: flashing | Progress: 11% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":12,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 175104 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 175104 bytes. | State: flashing | Progress: 12% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":12,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 179712 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 179712 bytes. | State: flashing | Progress: 12% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":12,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 184320 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 184320 bytes. | State: flashing | Progress: 12% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":13,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 188928 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 188928 bytes. | State: flashing | Progress: 13% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":13,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 193536 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 193536 bytes. | State: flashing | Progress: 13% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":13,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 198144 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 198144 bytes. | State: flashing | Progress: 13% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":14,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 202752 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 202752 bytes. | State: flashing | Progress: 14% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":14,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 207360 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 207360 bytes. | State: flashing | Progress: 14% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":14,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 211968 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 211968 bytes. | State: flashing | Progress: 14% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":15,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 216576 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 216576 bytes. | State: flashing | Progress: 15% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":15,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 221184 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 221184 bytes. | State: flashing | Progress: 15% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":15,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 225792 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 225792 bytes. | State: flashing | Progress: 15% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":16,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 230400 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 230400 bytes. | State: flashing | Progress: 16% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":16,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 235008 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 235008 bytes. | State: flashing | Progress: 16% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":16,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 239616 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 239616 bytes. | State: flashing | Progress: 16% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":17,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 244224 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 244224 bytes. | State: flashing | Progress: 17% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":17,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 248832 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 248832 bytes. | State: flashing | Progress: 17% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":17,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 253440 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 253440 bytes. | State: flashing | Progress: 17% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":18,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 258048 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 258048 bytes. | State: flashing | Progress: 18% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:46","event":"ota_flash","state":"flashing","progress":18,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 262656 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 262656 bytes. | State: flashing | Progress: 18% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":18,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 267264 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 267264 bytes. | State: flashing | Progress: 18% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":19,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 271872 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 271872 bytes. | State: flashing | Progress: 19% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":19,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 276480 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 276480 bytes. | State: flashing | Progress: 19% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":19,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 281088 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 281088 bytes. | State: flashing | Progress: 19% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":19,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 285696 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 285696 bytes. | State: flashing | Progress: 19% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":20,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 290304 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 290304 bytes. | State: flashing | Progress: 20% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":20,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 294912 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 294912 bytes. | State: flashing | Progress: 20% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":20,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 299520 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 299520 bytes. | State: flashing | Progress: 20% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":21,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 304128 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 304128 bytes. | State: flashing | Progress: 21% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":21,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 308736 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 308736 bytes. | State: flashing | Progress: 21% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":21,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 313344 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 313344 bytes. | State: flashing | Progress: 21% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":22,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 317952 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 317952 bytes. | State: flashing | Progress: 22% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":22,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 322560 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 322560 bytes. | State: flashing | Progress: 22% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":22,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 327168 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 327168 bytes. | State: flashing | Progress: 22% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":23,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 331776 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 331776 bytes. | State: flashing | Progress: 23% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":23,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 336384 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 336384 bytes. | State: flashing | Progress: 23% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":23,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 340992 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 340992 bytes. | State: flashing | Progress: 23% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":24,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 345600 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 345600 bytes. | State: flashing | Progress: 24% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":24,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 350208 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 350208 bytes. | State: flashing | Progress: 24% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:47","event":"ota_flash","state":"flashing","progress":24,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 354816 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 354816 bytes. | State: flashing | Progress: 24% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":25,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 359424 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 359424 bytes. | State: flashing | Progress: 25% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":25,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 364032 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 364032 bytes. | State: flashing | Progress: 25% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":25,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 368640 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 368640 bytes. | State: flashing | Progress: 25% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":26,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 373248 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 373248 bytes. | State: flashing | Progress: 26% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":26,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 377856 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 377856 bytes. | State: flashing | Progress: 26% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":26,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 382464 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 382464 bytes. | State: flashing | Progress: 26% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":27,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 387072 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 387072 bytes. | State: flashing | Progress: 27% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":27,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 391680 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 391680 bytes. | State: flashing | Progress: 27% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":27,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 396288 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 396288 bytes. | State: flashing | Progress: 27% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":28,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 400896 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 400896 bytes. | State: flashing | Progress: 28% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":28,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 405504 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 405504 bytes. | State: flashing | Progress: 28% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":28,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 410112 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 410112 bytes. | State: flashing | Progress: 28% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":28,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 414720 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 414720 bytes. | State: flashing | Progress: 28% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":29,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 419328 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 419328 bytes. | State: flashing | Progress: 29% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":29,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 423936 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 423936 bytes. | State: flashing | Progress: 29% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":29,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 428544 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 428544 bytes. | State: flashing | Progress: 29% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":30,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 433152 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 433152 bytes. | State: flashing | Progress: 30% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":30,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 437760 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 437760 bytes. | State: flashing | Progress: 30% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":30,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 442368 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 442368 bytes. | State: flashing | Progress: 30% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":31,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 446976 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 446976 bytes. | State: flashing | Progress: 31% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":31,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 451584 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 451584 bytes. | State: flashing | Progress: 31% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":31,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 456192 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 456192 bytes. | State: flashing | Progress: 31% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:48","event":"ota_flash","state":"flashing","progress":32,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 460800 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 460800 bytes. | State: flashing | Progress: 32% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":32,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 465408 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 465408 bytes. | State: flashing | Progress: 32% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":32,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 470016 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 470016 bytes. | State: flashing | Progress: 32% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":33,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 474624 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 474624 bytes. | State: flashing | Progress: 33% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":33,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 479232 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 479232 bytes. | State: flashing | Progress: 33% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":33,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 483840 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 483840 bytes. | State: flashing | Progress: 33% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":34,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 488448 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 488448 bytes. | State: flashing | Progress: 34% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":34,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 493056 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 493056 bytes. | State: flashing | Progress: 34% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":34,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 497664 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 497664 bytes. | State: flashing | Progress: 34% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":35,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 502272 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 502272 bytes. | State: flashing | Progress: 35% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":35,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 506880 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 506880 bytes. | State: flashing | Progress: 35% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":35,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 511488 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 511488 bytes. | State: flashing | Progress: 35% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":36,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 516096 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 516096 bytes. | State: flashing | Progress: 36% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":36,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 520704 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 520704 bytes. | State: flashing | Progress: 36% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":36,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 525312 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 525312 bytes. | State: flashing | Progress: 36% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":37,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 529920 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 529920 bytes. | State: flashing | Progress: 37% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":37,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 534528 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 534528 bytes. | State: flashing | Progress: 37% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":37,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 539136 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 539136 bytes. | State: flashing | Progress: 37% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":38,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 543744 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 543744 bytes. | State: flashing | Progress: 38% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":38,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 548352 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 548352 bytes. | State: flashing | Progress: 38% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:49","event":"ota_flash","state":"flashing","progress":38,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 552960 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 552960 bytes. | State: flashing | Progress: 38% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":38,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 557568 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 557568 bytes. | State: flashing | Progress: 38% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":39,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 562176 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 562176 bytes. | State: flashing | Progress: 39% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":39,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 566784 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 566784 bytes. | State: flashing | Progress: 39% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":39,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 571392 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 571392 bytes. | State: flashing | Progress: 39% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":40,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 576000 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 576000 bytes. | State: flashing | Progress: 40% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":40,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 580608 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 580608 bytes. | State: flashing | Progress: 40% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":40,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 585216 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 585216 bytes. | State: flashing | Progress: 40% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":41,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 589824 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 589824 bytes. | State: flashing | Progress: 41% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":41,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 594432 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 594432 bytes. | State: flashing | Progress: 41% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":41,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 599040 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 599040 bytes. | State: flashing | Progress: 41% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":42,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 603648 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 603648 bytes. | State: flashing | Progress: 42% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":42,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 608256 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 608256 bytes. | State: flashing | Progress: 42% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":42,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 612864 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 612864 bytes. | State: flashing | Progress: 42% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":43,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 617472 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 617472 bytes. | State: flashing | Progress: 43% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":43,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 622080 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 622080 bytes. | State: flashing | Progress: 43% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":43,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 626688 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 626688 bytes. | State: flashing | Progress: 43% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":44,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 631296 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 631296 bytes. | State: flashing | Progress: 44% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":44,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 635904 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 635904 bytes. | State: flashing | Progress: 44% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":44,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 640512 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 640512 bytes. | State: flashing | Progress: 44% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":45,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 645120 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 645120 bytes. | State: flashing | Progress: 45% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":45,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 649728 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 649728 bytes. | State: flashing | Progress: 45% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:50","event":"ota_flash","state":"flashing","progress":45,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 654336 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 654336 bytes. | State: flashing | Progress: 45% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":46,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 658944 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 658944 bytes. | State: flashing | Progress: 46% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":46,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 663552 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 663552 bytes. | State: flashing | Progress: 46% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":46,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 668160 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 668160 bytes. | State: flashing | Progress: 46% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":47,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 672768 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 672768 bytes. | State: flashing | Progress: 47% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":47,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 677376 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 677376 bytes. | State: flashing | Progress: 47% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":47,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 681984 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 681984 bytes. | State: flashing | Progress: 47% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":47,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 686592 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 686592 bytes. | State: flashing | Progress: 47% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":48,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 691200 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 691200 bytes. | State: flashing | Progress: 48% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":48,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 695808 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 695808 bytes. | State: flashing | Progress: 48% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":48,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 700416 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 700416 bytes. | State: flashing | Progress: 48% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":49,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 705024 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 705024 bytes. | State: flashing | Progress: 49% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":49,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 709632 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 709632 bytes. | State: flashing | Progress: 49% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":49,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 714240 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 714240 bytes. | State: flashing | Progress: 49% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":50,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 718848 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 718848 bytes. | State: flashing | Progress: 50% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":50,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 723456 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 723456 bytes. | State: flashing | Progress: 50% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":50,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 728064 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 728064 bytes. | State: flashing | Progress: 50% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":51,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 732672 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 732672 bytes. | State: flashing | Progress: 51% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":51,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 737280 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 737280 bytes. | State: flashing | Progress: 51% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":51,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 741888 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 741888 bytes. | State: flashing | Progress: 51% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:51","event":"ota_flash","state":"flashing","progress":52,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 746496 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 746496 bytes. | State: flashing | Progress: 52% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":52,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 751104 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 751104 bytes. | State: flashing | Progress: 52% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":52,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 755712 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 755712 bytes. | State: flashing | Progress: 52% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":53,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 760320 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 760320 bytes. | State: flashing | Progress: 53% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":53,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 764928 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 764928 bytes. | State: flashing | Progress: 53% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":53,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 769536 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 769536 bytes. | State: flashing | Progress: 53% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":54,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 774144 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 774144 bytes. | State: flashing | Progress: 54% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":54,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 778752 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 778752 bytes. | State: flashing | Progress: 54% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":54,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 783360 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 783360 bytes. | State: flashing | Progress: 54% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":55,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 787968 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 787968 bytes. | State: flashing | Progress: 55% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":55,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 792576 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 792576 bytes. | State: flashing | Progress: 55% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":55,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 797184 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 797184 bytes. | State: flashing | Progress: 55% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":56,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 801792 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 801792 bytes. | State: flashing | Progress: 56% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":56,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 806400 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 806400 bytes. | State: flashing | Progress: 56% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":56,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 811008 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 811008 bytes. | State: flashing | Progress: 56% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":57,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 815616 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 815616 bytes. | State: flashing | Progress: 57% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":57,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 820224 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 820224 bytes. | State: flashing | Progress: 57% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":57,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 824832 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 824832 bytes. | State: flashing | Progress: 57% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":57,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 829440 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 829440 bytes. | State: flashing | Progress: 57% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":58,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 834048 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 834048 bytes. | State: flashing | Progress: 58% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":58,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 838656 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 838656 bytes. | State: flashing | Progress: 58% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":58,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 843264 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 843264 bytes. | State: flashing | Progress: 58% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:52","event":"ota_flash","state":"flashing","progress":59,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 847872 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 847872 bytes. | State: flashing | Progress: 59% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":59,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 852480 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 852480 bytes. | State: flashing | Progress: 59% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":59,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 857088 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 857088 bytes. | State: flashing | Progress: 59% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":60,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 861696 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 861696 bytes. | State: flashing | Progress: 60% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":60,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 866304 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 866304 bytes. | State: flashing | Progress: 60% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":60,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 870912 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 870912 bytes. | State: flashing | Progress: 60% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":61,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 875520 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 875520 bytes. | State: flashing | Progress: 61% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":61,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 880128 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 880128 bytes. | State: flashing | Progress: 61% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":61,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 884736 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 884736 bytes. | State: flashing | Progress: 61% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":62,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 889344 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 889344 bytes. | State: flashing | Progress: 62% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":62,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 893952 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 893952 bytes. | State: flashing | Progress: 62% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":62,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 898560 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 898560 bytes. | State: flashing | Progress: 62% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":63,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 903168 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 903168 bytes. | State: flashing | Progress: 63% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":63,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 907776 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 907776 bytes. | State: flashing | Progress: 63% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":63,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 912384 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 912384 bytes. | State: flashing | Progress: 63% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":64,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 916992 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 916992 bytes. | State: flashing | Progress: 64% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":64,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 921600 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 921600 bytes. | State: flashing | Progress: 64% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":64,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 926208 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 926208 bytes. | State: flashing | Progress: 64% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":65,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 930816 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 930816 bytes. | State: flashing | Progress: 65% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":65,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 935424 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 935424 bytes. | State: flashing | Progress: 65% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":65,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 940032 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 940032 bytes. | State: flashing | Progress: 65% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:53","event":"ota_flash","state":"flashing","progress":66,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 944640 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 944640 bytes. | State: flashing | Progress: 66% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":66,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 949248 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 949248 bytes. | State: flashing | Progress: 66% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":66,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 953856 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 953856 bytes. | State: flashing | Progress: 66% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":67,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 958464 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 958464 bytes. | State: flashing | Progress: 67% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":67,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 963072 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 963072 bytes. | State: flashing | Progress: 67% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":67,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 967680 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 967680 bytes. | State: flashing | Progress: 67% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":67,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 972288 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 972288 bytes. | State: flashing | Progress: 67% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":68,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 976896 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 976896 bytes. | State: flashing | Progress: 68% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":68,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 981504 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 981504 bytes. | State: flashing | Progress: 68% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":68,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 986112 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 986112 bytes. | State: flashing | Progress: 68% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":69,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 990720 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 990720 bytes. | State: flashing | Progress: 69% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":69,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 995328 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 995328 bytes. | State: flashing | Progress: 69% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":69,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 999936 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 999936 bytes. | State: flashing | Progress: 69% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":70,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1004544 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1004544 bytes. | State: flashing | Progress: 70% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":70,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1009152 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1009152 bytes. | State: flashing | Progress: 70% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":70,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1013760 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1013760 bytes. | State: flashing | Progress: 70% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":71,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1018368 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1018368 bytes. | State: flashing | Progress: 71% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":71,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1022976 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1022976 bytes. | State: flashing | Progress: 71% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":71,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1027584 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1027584 bytes. | State: flashing | Progress: 71% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":72,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1032192 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1032192 bytes. | State: flashing | Progress: 72% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":72,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1036800 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1036800 bytes. | State: flashing | Progress: 72% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":72,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1041408 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1041408 bytes. | State: flashing | Progress: 72% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:54","event":"ota_flash","state":"flashing","progress":73,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1046016 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1046016 bytes. | State: flashing | Progress: 73% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":73,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1050624 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1050624 bytes. | State: flashing | Progress: 73% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":73,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1055232 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1055232 bytes. | State: flashing | Progress: 73% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":74,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1059840 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1059840 bytes. | State: flashing | Progress: 74% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":74,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1064448 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1064448 bytes. | State: flashing | Progress: 74% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":74,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1069056 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1069056 bytes. | State: flashing | Progress: 74% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":75,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1073664 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1073664 bytes. | State: flashing | Progress: 75% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":75,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1078272 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1078272 bytes. | State: flashing | Progress: 75% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":75,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1082880 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1082880 bytes. | State: flashing | Progress: 75% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":76,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1087488 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1087488 bytes. | State: flashing | Progress: 76% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":76,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1092096 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1092096 bytes. | State: flashing | Progress: 76% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":76,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1096704 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1096704 bytes. | State: flashing | Progress: 76% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":76,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1101312 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1101312 bytes. | State: flashing | Progress: 76% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":77,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1105920 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1105920 bytes. | State: flashing | Progress: 77% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":77,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1110528 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1110528 bytes. | State: flashing | Progress: 77% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":77,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1115136 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1115136 bytes. | State: flashing | Progress: 77% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":78,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1119744 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1119744 bytes. | State: flashing | Progress: 78% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":78,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1124352 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1124352 bytes. | State: flashing | Progress: 78% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":78,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1128960 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1128960 bytes. | State: flashing | Progress: 78% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":79,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1133568 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1133568 bytes. | State: flashing | Progress: 79% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":79,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1138176 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1138176 bytes. | State: flashing | Progress: 79% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":79,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1142784 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1142784 bytes. | State: flashing | Progress: 79% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":80,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1147392 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1147392 bytes. | State: flashing | Progress: 80% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:55","event":"ota_flash","state":"flashing","progress":80,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1152000 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1152000 bytes. | State: flashing | Progress: 80% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":80,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1156608 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1156608 bytes. | State: flashing | Progress: 80% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":81,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1161216 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1161216 bytes. | State: flashing | Progress: 81% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":81,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1165824 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1165824 bytes. | State: flashing | Progress: 81% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":81,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1170432 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1170432 bytes. | State: flashing | Progress: 81% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":82,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1175040 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1175040 bytes. | State: flashing | Progress: 82% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":82,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1179648 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1179648 bytes. | State: flashing | Progress: 82% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":82,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1184256 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1184256 bytes. | State: flashing | Progress: 82% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":83,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1188864 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1188864 bytes. | State: flashing | Progress: 83% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":83,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1193472 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1193472 bytes. | State: flashing | Progress: 83% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":83,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1198080 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1198080 bytes. | State: flashing | Progress: 83% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":84,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1202688 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1202688 bytes. | State: flashing | Progress: 84% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":84,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1207296 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1207296 bytes. | State: flashing | Progress: 84% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":84,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1211904 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1211904 bytes. | State: flashing | Progress: 84% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":85,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1216512 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1216512 bytes. | State: flashing | Progress: 85% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":85,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1221120 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1221120 bytes. | State: flashing | Progress: 85% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":85,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1225728 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1225728 bytes. | State: flashing | Progress: 85% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":86,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1230336 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1230336 bytes. | State: flashing | Progress: 86% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":86,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1234944 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1234944 bytes. | State: flashing | Progress: 86% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":86,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1239552 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1239552 bytes. | State: flashing | Progress: 86% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":86,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1244160 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1244160 bytes. | State: flashing | Progress: 86% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":87,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1248768 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1248768 bytes. | State: flashing | Progress: 87% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":87,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1253376 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1253376 bytes. | State: flashing | Progress: 87% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":87,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1257984 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1257984 bytes. | State: flashing | Progress: 87% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:56","event":"ota_flash","state":"flashing","progress":88,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1262592 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1262592 bytes. | State: flashing | Progress: 88% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":88,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1267200 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1267200 bytes. | State: flashing | Progress: 88% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":88,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1271808 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1271808 bytes. | State: flashing | Progress: 88% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":89,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1276416 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1276416 bytes. | State: flashing | Progress: 89% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":89,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1281024 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1281024 bytes. | State: flashing | Progress: 89% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":89,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1285632 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1285632 bytes. | State: flashing | Progress: 89% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":90,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1290240 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1290240 bytes. | State: flashing | Progress: 90% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":90,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1294848 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1294848 bytes. | State: flashing | Progress: 90% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":90,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1299456 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1299456 bytes. | State: flashing | Progress: 90% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":91,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1304064 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1304064 bytes. | State: flashing | Progress: 91% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":91,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1308672 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1308672 bytes. | State: flashing | Progress: 91% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":91,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1313280 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1313280 bytes. | State: flashing | Progress: 91% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":92,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1317888 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1317888 bytes. | State: flashing | Progress: 92% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":92,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1322496 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1322496 bytes. | State: flashing | Progress: 92% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":92,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1327104 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1327104 bytes. | State: flashing | Progress: 92% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":93,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1331712 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1331712 bytes. | State: flashing | Progress: 93% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":93,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1336320 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1336320 bytes. | State: flashing | Progress: 93% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":93,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1340928 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1340928 bytes. | State: flashing | Progress: 93% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":94,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1345536 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1345536 bytes. | State: flashing | Progress: 94% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":94,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1350144 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1350144 bytes. | State: flashing | Progress: 94% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":94,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1354752 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1354752 bytes. | State: flashing | Progress: 94% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":95,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1359360 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1359360 bytes. | State: flashing | Progress: 95% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":95,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1363968 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1363968 bytes. | State: flashing | Progress: 95% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":95,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1368576 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1368576 bytes. | State: flashing | Progress: 95% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:57","event":"ota_flash","state":"flashing","progress":95,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1373184 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1373184 bytes. | State: flashing | Progress: 95% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":96,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1377792 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1377792 bytes. | State: flashing | Progress: 96% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":96,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1382400 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1382400 bytes. | State: flashing | Progress: 96% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":96,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1387008 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1387008 bytes. | State: flashing | Progress: 96% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":97,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1391616 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1391616 bytes. | State: flashing | Progress: 97% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":97,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1396224 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1396224 bytes. | State: flashing | Progress: 97% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":97,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1400832 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1400832 bytes. | State: flashing | Progress: 97% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":98,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1405440 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1405440 bytes. | State: flashing | Progress: 98% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":98,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1410048 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1410048 bytes. | State: flashing | Progress: 98% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":98,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1414656 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1414656 bytes. | State: flashing | Progress: 98% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":99,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1419264 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1419264 bytes. | State: flashing | Progress: 99% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":99,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1423872 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1423872 bytes. | State: flashing | Progress: 99% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":99,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 1428480 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 1428480 bytes. | State: flashing | Progress: 99% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 2061 binary bytes. Total: 1430541 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 2061 binary bytes. Total: 1430541 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:58","event":"validation","state":"checking","progress":90,"error_code":0,"part":4,"details":"Decoded firmware file complete. Total binary size: 1430541 bytes"}
+[OTA LOG] [validation] Decoded firmware file complete. Total binary size: 1430541 bytes | State: checking | Progress: 90% | Error: 0 | Part: 4
+E (244751) esp_image: invalid segment length 0xd04d2030
+Could Not Activate The Firmware
+{"timestamp":"1970-01-01T00:03:58","event":"ota_flash","state":"error","progress":100,"error_code":5,"part":4,"details":"OTA partition closing write failed!"}
+[OTA LOG] [ota_flash] OTA partition closing write failed! | State: error | Progress: 100% | Error: 5 | Part: 4
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+E (173) esp_core_dump_flash: No core dump partition found!
+E (173) esp_core_dump_flash: No core dump partition found!
+AP IP address: 192.168.4.1
+HTTP Server started on Port 80
