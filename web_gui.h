@@ -1025,7 +1025,9 @@ const char index_html[] = R"rawhtml(
             // 8. Poll storage parameters periodically
             pollCount++;
             if (pollCount % 6 === 1) {
-                loadModemFiles();
+                if (data.status === 0 || data.status === 4 || data.status === 5) {
+                    loadModemFiles();
+                }
                 loadEsp32Storage();
             }
 

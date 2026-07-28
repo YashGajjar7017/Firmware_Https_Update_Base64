@@ -1,0 +1,452 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0xb (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+E (173) esp_core_dump_flash: No core dump partition found!
+E (173) esp_core_dump_flash: No core dump partition found!
+AP IP address: 192.168.4.1
+HTTP Server started on Port 80
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+E (173) esp_core_dump_flash: No core dump partition found!
+E (173) esp_core_dump_flash: No core dump partition found!
+AP IP address: 192.168.4.1
+HTTP Server started on Port 80
+{"timestamp":"1970-01-01T00:00:11","event":"ota_flash","state":"initializing","progress":5,"error_code":0,"part":0,"details":"Initializing OTA update flashing session..."}
+[OTA LOG] [ota_flash] Initializing OTA update flashing session... | State: initializing | Progress: 5% | Error: 0 | Part: 0
+{"timestamp":"1970-01-01T00:00:11","event":"PSRAM_ALLOC","state":"ready","progress":2,"error_code":0,"part":0,"details":"PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts"}
+[OTA LOG] [PSRAM_ALLOC] PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts | State: ready | Progress: 2% | Error: 0 | Part: 0
+[PSRAM] PSRAM pre-alloc OK: 2000000 bytes (1953.1 KB) for 4 parts
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"Pre-clearing ALL old OTA firmware files from modem UFS storage..."}
+[OTA LOG] [UFS_CLEAN] Pre-clearing ALL old OTA firmware files from modem UFS storage... | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Pre-clean: UFS:otafw_part1.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part1.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":2,"details":"Pre-clean: UFS:otafw_part2.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part2.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 2
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":3,"details":"Pre-clean: UFS:otafw_part3.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part3.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 3
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":4,"details":"Pre-clean: UFS:otafw_part4.b64 not found (already clean)"}
+[OTA LOG] [UFS_CLEAN] Pre-clean: UFS:otafw_part4.b64 not found (already clean) | State: cleanup | Progress: 10% | Error: 0 | Part: 4
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_CLEAN","state":"cleanup","progress":10,"error_code":0,"part":0,"details":"UFS pre-clean complete. Starting sequential part downloads."}
+[OTA LOG] [UFS_CLEAN] UFS pre-clean complete. Starting sequential part downloads. | State: cleanup | Progress: 10% | Error: 0 | Part: 0
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:00:11","event":"UFS_DEL","state":"cleanup","progress":10,"error_code":0,"part":1,"details":"Cleared old UFS file: UFS:otafw_part1.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part1.b64 before re-download. | State: cleanup | Progress: 10% | Error: 0 | Part: 1
+{"timestamp":"1970-01-01T00:00:11","event":"HTTP_REQ","state":"requesting","progress":10,"error_code":0,"part":1,"details":"HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part1.b64 -> Saving as UFS:otafw_part1.b64 | State: requesting | Progress: 10% | Error: 0 | Part: 1
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part1.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 1 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:00:12","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":1,"details":"Part 1 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 1 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 1
+[HTTP_PROG] Part 1 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:00:12","event":"AT_CMD","state":"sending","progress":10,"error_code":0,"part":1,"details":"AT+QHTTPREADFILE='UFS:otafw_part1.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part1.b64',600 | State: sending | Progress: 10% | Error: 0 | Part: 1
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part1.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part1.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:00:18","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":1,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 1
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part1.b64 written successfully.
+{"timestamp":"1970-01-01T00:00:18","event":"HTTP_REQ","state":"complete","progress":10,"error_code":0,"part":1,"details":"ACK: Part 1 stored as UFS:otafw_part1.b64 from URL: http://64.251.10.159/otafw_part1.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 1 stored as UFS:otafw_part1.b64 from URL: http://64.251.10.159/otafw_part1.b64 | State: complete | Progress: 10% | Error: 0 | Part: 1
+[HTTP_REQ] ACK: Part 1 -> UFS:otafw_part1.b64 from http://64.251.10.159/otafw_part1.b64
+return value: 0
+{"timestamp":"1970-01-01T00:00:19","event":"UFS_READ","state":"reading","progress":5,"error_code":0,"part":1,"details":"Reading UFS file: UFS:otafw_part1.b64 (from URL: http://64.251.10.159/otafw_part1.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part1.b64 (from URL: http://64.251.10.159/otafw_part1.b64) | State: reading | Progress: 5% | Error: 0 | Part: 1
+[GSM SEND] AT+QFLST="UFS:otafw_part1.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part1.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:00:19","event":"UFS_READ","state":"reading","progress":5,"error_code":0,"part":1,"details":"UFS:otafw_part1.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part1.b64 size from modem: 476856 bytes | State: reading | Progress: 5% | Error: 0 | Part: 1
+[UFS_READ] UFS:otafw_part1.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part1.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 1
+  |====>                                   | (64KB/465KB) Part 1
+  |=======>                                | (96KB/465KB) Part 1
+  |=========>                              | (128KB/465KB) Part 1
+  |============>                           | (160KB/465KB) Part 1
+  |===============>                        | (192KB/465KB) Part 1
+  |==================>                     | (224KB/465KB) Part 1
+  |====================>                   | (256KB/465KB) Part 1
+  |=======================>                | (288KB/465KB) Part 1
+  |==========================>             | (320KB/465KB) Part 1
+  |=============================>          | (352KB/465KB) Part 1
+  |===============================>        | (384KB/465KB) Part 1
+  |==================================>     | (416KB/465KB) Part 1
+  |=====================================>  | (448KB/465KB) Part 1
+  |=======================================>| (465KB/465KB) Part 1
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 1 complete. PSRAM total: 476856 bytes
+{"timestamp":"1970-01-01T00:01:03","event":"PSRAM_LIST","state":"buffering","progress":4,"error_code":0,"part":1,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes]  | State: buffering | Progress: 4% | Error: 0 | Part: 1
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part1.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:01:03","event":"UFS_DEL","state":"cleanup","progress":25,"error_code":0,"part":2,"details":"Cleared old UFS file: UFS:otafw_part2.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part2.b64 before re-download. | State: cleanup | Progress: 25% | Error: 0 | Part: 2
+{"timestamp":"1970-01-01T00:01:03","event":"HTTP_REQ","state":"requesting","progress":25,"error_code":0,"part":2,"details":"HTTP GET: http://64.251.10.159/otafw_part2.b64 -> Saving as UFS:otafw_part2.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part2.b64 -> Saving as UFS:otafw_part2.b64 | State: requesting | Progress: 25% | Error: 0 | Part: 2
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part2.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 2 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:01:05","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":2,"details":"Part 2 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 2 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 2
+[HTTP_PROG] Part 2 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:01:05","event":"AT_CMD","state":"sending","progress":25,"error_code":0,"part":2,"details":"AT+QHTTPREADFILE='UFS:otafw_part2.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part2.b64',600 | State: sending | Progress: 25% | Error: 0 | Part: 2
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part2.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part2.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:01:10","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":2,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 2
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part2.b64 written successfully.
+{"timestamp":"1970-01-01T00:01:10","event":"HTTP_REQ","state":"complete","progress":25,"error_code":0,"part":2,"details":"ACK: Part 2 stored as UFS:otafw_part2.b64 from URL: http://64.251.10.159/otafw_part2.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 2 stored as UFS:otafw_part2.b64 from URL: http://64.251.10.159/otafw_part2.b64 | State: complete | Progress: 25% | Error: 0 | Part: 2
+[HTTP_REQ] ACK: Part 2 -> UFS:otafw_part2.b64 from http://64.251.10.159/otafw_part2.b64
+return value: 0
+{"timestamp":"1970-01-01T00:01:11","event":"UFS_READ","state":"reading","progress":30,"error_code":0,"part":2,"details":"Reading UFS file: UFS:otafw_part2.b64 (from URL: http://64.251.10.159/otafw_part2.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part2.b64 (from URL: http://64.251.10.159/otafw_part2.b64) | State: reading | Progress: 30% | Error: 0 | Part: 2
+[GSM SEND] AT+QFLST="UFS:otafw_part2.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part2.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:01:11","event":"UFS_READ","state":"reading","progress":30,"error_code":0,"part":2,"details":"UFS:otafw_part2.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part2.b64 size from modem: 476856 bytes | State: reading | Progress: 30% | Error: 0 | Part: 2
+[UFS_READ] UFS:otafw_part2.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part2.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 2
+  |====>                                   | (64KB/465KB) Part 2
+  |=======>                                | (96KB/465KB) Part 2
+  |=========>                              | (128KB/465KB) Part 2
+  |============>                           | (160KB/465KB) Part 2
+  |===============>                        | (192KB/465KB) Part 2
+  |==================>                     | (224KB/465KB) Part 2
+  |====================>                   | (256KB/465KB) Part 2
+  |=======================>                | (288KB/465KB) Part 2
+  |==========================>             | (320KB/465KB) Part 2
+  |=============================>          | (352KB/465KB) Part 2
+  |===============================>        | (384KB/465KB) Part 2
+  |==================================>     | (416KB/465KB) Part 2
+  |=====================================>  | (448KB/465KB) Part 2
+  |=======================================>| (465KB/465KB) Part 2
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 2 complete. PSRAM total: 953712 bytes
+{"timestamp":"1970-01-01T00:01:55","event":"PSRAM_LIST","state":"buffering","progress":6,"error_code":0,"part":2,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes]  | State: buffering | Progress: 6% | Error: 0 | Part: 2
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part2.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:01:55","event":"UFS_DEL","state":"cleanup","progress":50,"error_code":0,"part":3,"details":"Cleared old UFS file: UFS:otafw_part3.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part3.b64 before re-download. | State: cleanup | Progress: 50% | Error: 0 | Part: 3
+{"timestamp":"1970-01-01T00:01:55","event":"HTTP_REQ","state":"requesting","progress":50,"error_code":0,"part":3,"details":"HTTP GET: http://64.251.10.159/otafw_part3.b64 -> Saving as UFS:otafw_part3.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part3.b64 -> Saving as UFS:otafw_part3.b64 | State: requesting | Progress: 50% | Error: 0 | Part: 3
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part3.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 3 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:01:56","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":3,"details":"Part 3 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 3 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 3
+[HTTP_PROG] Part 3 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:01:56","event":"AT_CMD","state":"sending","progress":50,"error_code":0,"part":3,"details":"AT+QHTTPREADFILE='UFS:otafw_part3.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part3.b64',600 | State: sending | Progress: 50% | Error: 0 | Part: 3
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part3.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part3.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:02:02","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":3,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 3
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part3.b64 written successfully.
+{"timestamp":"1970-01-01T00:02:02","event":"HTTP_REQ","state":"complete","progress":50,"error_code":0,"part":3,"details":"ACK: Part 3 stored as UFS:otafw_part3.b64 from URL: http://64.251.10.159/otafw_part3.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 3 stored as UFS:otafw_part3.b64 from URL: http://64.251.10.159/otafw_part3.b64 | State: complete | Progress: 50% | Error: 0 | Part: 3
+[HTTP_REQ] ACK: Part 3 -> UFS:otafw_part3.b64 from http://64.251.10.159/otafw_part3.b64
+return value: 0
+{"timestamp":"1970-01-01T00:02:02","event":"UFS_READ","state":"reading","progress":55,"error_code":0,"part":3,"details":"Reading UFS file: UFS:otafw_part3.b64 (from URL: http://64.251.10.159/otafw_part3.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part3.b64 (from URL: http://64.251.10.159/otafw_part3.b64) | State: reading | Progress: 55% | Error: 0 | Part: 3
+[GSM SEND] AT+QFLST="UFS:otafw_part3.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part3.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:02:02","event":"UFS_READ","state":"reading","progress":55,"error_code":0,"part":3,"details":"UFS:otafw_part3.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part3.b64 size from modem: 476856 bytes | State: reading | Progress: 55% | Error: 0 | Part: 3
+[UFS_READ] UFS:otafw_part3.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part3.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 3
+  |====>                                   | (64KB/465KB) Part 3
+  |=======>                                | (96KB/465KB) Part 3
+  |=========>                              | (128KB/465KB) Part 3
+  |============>                           | (160KB/465KB) Part 3
+  |===============>                        | (192KB/465KB) Part 3
+  |==================>                     | (224KB/465KB) Part 3
+  |====================>                   | (256KB/465KB) Part 3
+  |=======================>                | (288KB/465KB) Part 3
+  |==========================>             | (320KB/465KB) Part 3
+  |=============================>          | (352KB/465KB) Part 3
+  |===============================>        | (384KB/465KB) Part 3
+  |==================================>     | (416KB/465KB) Part 3
+  |=====================================>  | (448KB/465KB) Part 3
+  |=======================================>| (465KB/465KB) Part 3
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 3 complete. PSRAM total: 1430568 bytes
+{"timestamp":"1970-01-01T00:02:47","event":"PSRAM_LIST","state":"buffering","progress":8,"error_code":0,"part":3,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes]  | State: buffering | Progress: 8% | Error: 0 | Part: 3
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part3.b64"
+[GSM RECV] 
+OK
+
+[GSM SEND] AT+QFDEL="UFS:firm"
+[GSM RECV] 
++CME ERROR: 418
+
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
++CME ERROR: 418
+
+{"timestamp":"1970-01-01T00:02:47","event":"UFS_DEL","state":"cleanup","progress":75,"error_code":0,"part":4,"details":"Cleared old UFS file: UFS:otafw_part4.b64 before re-download."}
+[OTA LOG] [UFS_DEL] Cleared old UFS file: UFS:otafw_part4.b64 before re-download. | State: cleanup | Progress: 75% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:02:47","event":"HTTP_REQ","state":"requesting","progress":75,"error_code":0,"part":4,"details":"HTTP GET: http://64.251.10.159/otafw_part4.b64 -> Saving as UFS:otafw_part4.b64"}
+[OTA LOG] [HTTP_REQ] HTTP GET: http://64.251.10.159/otafw_part4.b64 -> Saving as UFS:otafw_part4.b64 | State: requesting | Progress: 75% | Error: 0 | Part: 4
+[GSM SEND] AT+QHTTPURL=36,160
+[GSM RECV] 
+CONNECT
+
+[GSM SEND] http://64.251.10.159/otafw_part4.b64[GSM RECV] 
+OK
+
+[HTTP_PROG] Part 4 download started. Waiting for modem...
+[GSM SEND] AT+QHTTPGET=240
+[GSM RECV] 
+OK
+
++QHTTPGET: 0,200,476856
+
+{"timestamp":"1970-01-01T00:02:49","event":"HTTP_PROG","state":"downloading","progress":100,"error_code":0,"part":4,"details":"Part 4 HTTP Download Complete: |===================>| 465KB/465KB (100%)"}
+[OTA LOG] [HTTP_PROG] Part 4 HTTP Download Complete: |===================>| 465KB/465KB (100%) | State: downloading | Progress: 100% | Error: 0 | Part: 4
+[HTTP_PROG] Part 4 |===================>| 465KB/465KB (100%)
+{"timestamp":"1970-01-01T00:02:49","event":"AT_CMD","state":"sending","progress":75,"error_code":0,"part":4,"details":"AT+QHTTPREADFILE='UFS:otafw_part4.b64',600"}
+[OTA LOG] [AT_CMD] AT+QHTTPREADFILE='UFS:otafw_part4.b64',600 | State: sending | Progress: 75% | Error: 0 | Part: 4
+[AT_CMD] Sending: AT+QHTTPREADFILE="UFS:otafw_part4.b64",600
+[GSM SEND] AT+QHTTPREADFILE="UFS:otafw_part4.b64",600
+[GSM RECV] 
+OK
+
++QHTTPREADFILE: 0
+
+{"timestamp":"1970-01-01T00:02:55","event":"HTTP_PROG","state":"complete","progress":100,"error_code":0,"part":4,"details":"QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully."}
+[OTA LOG] [HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully. | State: complete | Progress: 100% | Error: 0 | Part: 4
+[HTTP_PROG] QHTTPREADFILE OK (code=0): UFS:otafw_part4.b64 written successfully.
+{"timestamp":"1970-01-01T00:02:55","event":"HTTP_REQ","state":"complete","progress":75,"error_code":0,"part":4,"details":"ACK: Part 4 stored as UFS:otafw_part4.b64 from URL: http://64.251.10.159/otafw_part4.b64"}
+[OTA LOG] [HTTP_REQ] ACK: Part 4 stored as UFS:otafw_part4.b64 from URL: http://64.251.10.159/otafw_part4.b64 | State: complete | Progress: 75% | Error: 0 | Part: 4
+[HTTP_REQ] ACK: Part 4 -> UFS:otafw_part4.b64 from http://64.251.10.159/otafw_part4.b64
+return value: 0
+{"timestamp":"1970-01-01T00:02:55","event":"UFS_READ","state":"reading","progress":80,"error_code":0,"part":4,"details":"Reading UFS file: UFS:otafw_part4.b64 (from URL: http://64.251.10.159/otafw_part4.b64)"}
+[OTA LOG] [UFS_READ] Reading UFS file: UFS:otafw_part4.b64 (from URL: http://64.251.10.159/otafw_part4.b64) | State: reading | Progress: 80% | Error: 0 | Part: 4
+[GSM SEND] AT+QFLST="UFS:otafw_part4.b64"
+[GSM RECV] 
++QFLST: "UFS:otafw_part4.b64",476856
+
+OK
+
+{"timestamp":"1970-01-01T00:02:55","event":"UFS_READ","state":"reading","progress":80,"error_code":0,"part":4,"details":"UFS:otafw_part4.b64 size from modem: 476856 bytes"}
+[OTA LOG] [UFS_READ] UFS:otafw_part4.b64 size from modem: 476856 bytes | State: reading | Progress: 80% | Error: 0 | Part: 4
+[UFS_READ] UFS:otafw_part4.b64 size from modem: 476856 bytes
+[GSM SEND] AT+QFOPEN="otafw_part4.b64",0
+[GSM RECV] 
++QFOPEN: 1027
+
+OK
+
+[UFS_READ] Starting read of 476856 bytes in 2048-byte chunks (233 total chunks)...
+  |=>                                      | (32KB/465KB) Part 4
+  |====>                                   | (64KB/465KB) Part 4
+  |=======>                                | (96KB/465KB) Part 4
+  |=========>                              | (128KB/465KB) Part 4
+  |============>                           | (160KB/465KB) Part 4
+  |===============>                        | (192KB/465KB) Part 4
+  |==================>                     | (224KB/465KB) Part 4
+  |====================>                   | (256KB/465KB) Part 4
+  |=======================>                | (288KB/465KB) Part 4
+  |==========================>             | (320KB/465KB) Part 4
+  |=============================>          | (352KB/465KB) Part 4
+  |===============================>        | (384KB/465KB) Part 4
+  |==================================>     | (416KB/465KB) Part 4
+  |=====================================>  | (448KB/465KB) Part 4
+  |=======================================>| (465KB/465KB) Part 4
+[GSM SEND] AT+QFCLOSE=1027
+[GSM RECV] 
+OK
+
+[UFS_READ] Part 4 complete. PSRAM total: 1907424 bytes
+{"timestamp":"1970-01-01T00:03:39","event":"PSRAM_LIST","state":"buffering","progress":10,"error_code":0,"part":4,"details":"PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes] "}
+[OTA LOG] [PSRAM_LIST] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes]  | State: buffering | Progress: 10% | Error: 0 | Part: 4
+[OTA LOG] PSRAM buffered parts: [Part 1: 476856 bytes] [Part 2: 476856 bytes] [Part 3: 476856 bytes] [Part 4: 476856 bytes] 
+[GSM SEND] AT+QFDEL="UFS:otafw_part4.b64"
+[GSM RECV] 
+OK
+
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"decoding","progress":100,"error_code":0,"part":4,"details":"All base64 files loaded into PSRAM. Starting decode & OTA flash..."}
+[OTA LOG] [ota_flash] All base64 files loaded into PSRAM. Starting decode & OTA flash... | State: decoding | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 4608 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 4608 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 9216 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 9216 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":100,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 13824 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 13824 bytes. | State: flashing | Progress: 100% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 18432 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 18432 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 23040 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 23040 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"flashing","progress":1,"error_code":0,"part":4,"details":"Flashing PSRAM: decoded 4608 binary bytes. Total: 27648 bytes."}
+[OTA LOG] [ota_flash] Flashing PSRAM: decoded 4608 binary bytes. Total: 27648 bytes. | State: flashing | Progress: 1% | Error: 0 | Part: 4
+Base64 decoding failed during final flash! Code: -44, Offset: 36864
+[ERROR] Failing Base64 snippet: TVMtMS0wLS0tUEZZAE1TLTEtMC0tLVBGQgBNUy0xLTAtLS1GUlEATVMtMS0w
+{"timestamp":"1970-01-01T00:03:40","event":"ota_flash","state":"error","progress":100,"error_code":3,"part":4,"details":"Base64 decode failed at offset 36864 (code=-44). Snippet: TVMtMS0wLS0tUEZZAE1TLTEtMC0tLVBGQgBNUy0xLTAtLS1GUlEATVMtMS0w"}
+[OTA LOG] [ota_flash] Base64 decode failed at offset 36864 (code=-44). Snippet: TVMtMS0wLS0tUEZZAE1TLTEtMC0tLVBGQgBNUy0xLTAtLS1GUlEATVMtMS0w | State: error | Progress: 100% | Error: 3 | Part: 4
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+E (173) esp_core_dump_flash: No core dump partition found!
+E (173) esp_core_dump_flash: No core dump partition found!

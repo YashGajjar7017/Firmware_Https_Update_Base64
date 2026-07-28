@@ -17,6 +17,9 @@
 #include <WebServer.h>
 #include "mbedtls/base64.h"
 #include <Update.h>
+#include "esp_task_wdt.h"
+// Feed the Task Watchdog Timer so the long UFS read loop does not trigger a restart
+#define FEED_WDT() esp_task_wdt_reset()
 #else
 // Windows Native simulation headers
 #include <windows.h>
@@ -31,6 +34,43 @@ typedef std::string String;
 #define delay(ms) Sleep(ms)
 static bool s_update_in_progress = false;
 #endif
+
+#ifdef ESP_PLATFORM
+#include "freertos/semphr.h"
+static SemaphoreHandle_t s_gsm_mutex = NULL;
+static StaticSemaphore_t s_gsm_mutex_buffer;
+static void init_gsm_mutex() {
+    if (s_gsm_mutex == NULL) {
+        s_gsm_mutex = xSemaphoreCreateMutexStatic(&s_gsm_mutex_buffer);
+    }
+}
+#define LOCK_GSM() do { init_gsm_mutex(); xSemaphoreTake(s_gsm_mutex, portMAX_DELAY); } while(0)
+#define UNLOCK_GSM() do { if (s_gsm_mutex) xSemaphoreGive(s_gsm_mutex); } while(0)
+#else
+#define LOCK_GSM()
+#define UNLOCK_GSM()
+#define FEED_WDT()
+#endif
+
+// =========================================================================
+// OTA-specific error codes (passed to add_log error_code field)
+// =========================================================================
+#define OTA_ERR_NONE              0
+#define OTA_ERR_FILE_OPEN         1   // AT+QFOPEN failed
+#define OTA_ERR_FILE_READ         2   // AT+QFREAD returned 0 / timeout
+#define OTA_ERR_FILE_READ_RETRY   3   // exceeded MAX_RETRY on chunk
+#define OTA_ERR_PSRAM_ALLOC       4   // heap_caps_realloc / realloc failed
+#define OTA_ERR_PSRAM_APPEND      5   // append_to_psram_buffer returned false
+#define OTA_ERR_SIZE_MISMATCH     6   // parsed UFS file size = 0
+#define OTA_ERR_B64_DECODE        7   // mbedtls_base64_decode failed
+#define OTA_ERR_UPDATE_BEGIN      8   // Update.begin() failed
+#define OTA_ERR_UPDATE_WRITE      9   // Update.write() failed
+#define OTA_ERR_UPDATE_END        10  // Update.end() failed
+#define OTA_ERR_DOWNLOAD          11  // getfirmwarefile returned non-zero
+#define OTA_ERR_LOCK_TIMEOUT      12  // GSM mutex acquire timed out
+
+// Volatile flag so HTTP handlers can see when OTA is actively running
+static volatile bool s_ota_running = false;
 
 // AT command macros matching requirements
 #define FTP_FILE_OPEN "AT+QFOPEN=\"%s\",0\r\n"
@@ -326,13 +366,6 @@ public:
     char buffer[8192];
     
     bool sendCommand(const char* cmd, const char* expected_resp, uint32_t timeout, uint8_t retries = 1, uint32_t delay_ms = 100, const char* alternative_resp = NULL) {
-        char details[256];
-        snprintf(details, sizeof(details), "AT CMD: %s", cmd);
-        size_t len = strlen(details);
-        while (len > 0 && (details[len-1] == '\r' || details[len-1] == '\n')) {
-            details[--len] = '\0';
-        }
-        add_log("AT_CMD", "sending", 0, 0, 0, details);
         (void)retries; (void)delay_ms;
 
         #ifndef ESP_PLATFORM
@@ -718,6 +751,11 @@ static uint32_t finalsize = 0;
 static uint32_t spiffs_offset = 0;
 static uint8_t buf1[8192];
 
+// Static buffers for qftp_file_read — kept off the OTA task stack to prevent overflow
+// (Only one qftp_file_read runs at a time, so static is safe)
+static char s_qfr_connect_buf[512];
+static char s_qfr_trailing[128];
+
 int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     #ifndef ESP_PLATFORM
     // Host PC Simulation Mode
@@ -750,33 +788,42 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
         Serial1.read();
     }
     
-    // Send read command
+    // Send read command — suppress per-chunk GSM SEND noise; progress bar covers it
     Serial1.print(cmd);
-    Serial.printf("[GSM SEND] %s", cmd);
     
     // 1. Read until "CONNECT" is received
     uint32_t start_time = millis();
-    char connect_buf[32] = {0};
+    memset(s_qfr_connect_buf, 0, sizeof(s_qfr_connect_buf));
     int c_idx = 0;
     bool found_connect = false;
     
     while (millis() - start_time < 5000) {
-        if (Serial1.available()) {
+        bool read_any = false;
+        while (Serial1.available()) {
+            read_any = true;
             char c = Serial1.read();
-            if (c_idx < (int)sizeof(connect_buf) - 1) {
-                connect_buf[c_idx++] = c;
-                connect_buf[c_idx] = '\0';
+            if (c_idx < (int)sizeof(s_qfr_connect_buf) - 1) {
+                s_qfr_connect_buf[c_idx++] = c;
+                s_qfr_connect_buf[c_idx] = '\0';
+            } else {
+                memmove(s_qfr_connect_buf, s_qfr_connect_buf + 256, 256);
+                c_idx = 256;
+                s_qfr_connect_buf[c_idx++] = c;
+                s_qfr_connect_buf[c_idx] = '\0';
             }
-            if (strstr(connect_buf, "CONNECT") != NULL) {
+            if (strstr(s_qfr_connect_buf, "CONNECT") != NULL) {
                 found_connect = true;
                 break;
             }
         }
-        delay(1);
+        if (found_connect) break;
+        if (!read_any) {
+            delay(1);
+        }
     }
     
     if (!found_connect) {
-        Serial.printf("[ERROR] QFREAD: CONNECT not found. Buffer: %s\r\n", connect_buf);
+        Serial.printf("[ERROR] QFREAD: CONNECT not found. Buffer: %s\r\n", s_qfr_connect_buf);
         return 0;
     }
     
@@ -789,17 +836,26 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     // Skip any leading whitespace/space after CONNECT
     char c = '\0';
     while (millis() - start_time < 2000) {
-        if (Serial1.available()) {
+        bool read_any = false;
+        while (Serial1.available()) {
+            read_any = true;
             c = Serial1.read();
             if (c != ' ' && c != '\r' && c != '\n') {
                 len_buf[l_idx++] = c;
                 break;
             }
         }
+        if (l_idx > 0) break; // found the first non-space character
+        if (!read_any) {
+            delay(1);
+        }
     }
     
+    start_time = millis(); // reset timeout for digits read
     while (millis() - start_time < 2000) {
-        if (Serial1.available()) {
+        bool read_any = false;
+        while (Serial1.available()) {
+            read_any = true;
             c = Serial1.read();
             if (c == '\r') {
                 found_cr = true;
@@ -808,6 +864,10 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
             if (l_idx < (int)sizeof(len_buf) - 1) {
                 len_buf[l_idx++] = c;
             }
+        }
+        if (found_cr) break;
+        if (!read_any) {
+            delay(1);
         }
     }
     
@@ -824,10 +884,20 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     
     // Read '\n' that follows '\r'
     start_time = millis();
+    bool found_lf = false;
     while (millis() - start_time < 1000) {
-        if (Serial1.available()) {
+        bool read_any = false;
+        while (Serial1.available()) {
+            read_any = true;
             c = Serial1.read();
-            if (c == '\n') break;
+            if (c == '\n') {
+                found_lf = true;
+                break;
+            }
+        }
+        if (found_lf) break;
+        if (!read_any) {
+            delay(1);
         }
     }
     
@@ -835,8 +905,11 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     int bytes_read = 0;
     start_time = millis();
     while (bytes_read < length1 && (millis() - start_time < 5000)) {
-        if (Serial1.available()) {
-            buff[bytes_read++] = Serial1.read();
+        int avail = Serial1.available();
+        if (avail > 0) {
+            for (int i = 0; i < avail && bytes_read < length1; i++) {
+                buff[bytes_read++] = Serial1.read();
+            }
         } else {
             delay(1);
         }
@@ -848,26 +921,37 @@ int qftp::qftp_file_read(int32_t handle, int length, uint8_t *buff) {
     }
     
     // 4. Read trailing \r\nOK\r\n
-    char trailing[32] = {0};
+    memset(s_qfr_trailing, 0, sizeof(s_qfr_trailing));
     int t_idx = 0;
     start_time = millis();
     bool found_ok = false;
     while (millis() - start_time < 2000) {
-        if (Serial1.available()) {
+        bool read_any = false;
+        while (Serial1.available()) {
+            read_any = true;
             c = Serial1.read();
-            if (t_idx < (int)sizeof(trailing) - 1) {
-                trailing[t_idx++] = c;
-                trailing[t_idx] = '\0';
+            if (t_idx < (int)sizeof(s_qfr_trailing) - 1) {
+                s_qfr_trailing[t_idx++] = c;
+                s_qfr_trailing[t_idx] = '\0';
+            } else {
+                memmove(s_qfr_trailing, s_qfr_trailing + 64, 64);
+                t_idx = 64;
+                s_qfr_trailing[t_idx++] = c;
+                s_qfr_trailing[t_idx] = '\0';
             }
-            if (strstr(trailing, "OK") != NULL) {
+            if (strstr(s_qfr_trailing, "OK") != NULL) {
                 found_ok = true;
                 break;
             }
         }
-        delay(1);
+        if (found_ok) break;
+        if (!read_any) {
+            delay(1);
+        }
     }
     
-    Serial.printf("[GSM RECV] CONNECT %d ... OK\r\n", length1);
+    // Only print CONNECT/OK summary — don't flood console with per-chunk lines
+    // (the progress bar every 32KB already shows throughput)
     return length1;
     #endif
 }
@@ -920,7 +1004,12 @@ static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
         }
         
         #ifdef ESP_PLATFORM
-        uint8_t* new_buf = (uint8_t*)heap_caps_realloc(s_psram_base64_buffer, new_capacity, MALLOC_CAP_SPIRAM);
+        uint8_t* new_buf = NULL;
+        if (psramFound()) {
+            new_buf = (uint8_t*)heap_caps_realloc(s_psram_base64_buffer, new_capacity, MALLOC_CAP_SPIRAM);
+        } else {
+            new_buf = (uint8_t*)realloc(s_psram_base64_buffer, new_capacity);
+        }
         #else
         uint8_t* new_buf = (uint8_t*)realloc(s_psram_base64_buffer, new_capacity);
         #endif
@@ -941,7 +1030,10 @@ static bool append_to_psram_buffer(const uint8_t* data, size_t len) {
 uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
     uint32_t fp = ftp.qftp_file_open(filename, 2, 0);
     if (fp == 0) {
-        Serial.println("FTP file open failed");
+        char err_msg[128];
+        snprintf(err_msg, sizeof(err_msg), "[ERR %d] AT+QFOPEN failed for UFS:%s", OTA_ERR_FILE_OPEN, filename.c_str());
+        add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_OPEN, modbus_get_register(REG_CURRENT_PART), err_msg);
+        Serial.println(err_msg);
         return 0;
     }
     
@@ -949,6 +1041,12 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
     uint32_t fp_size = getFloatValue(FP_SIZE);
     uint32_t file_offset = 0;
     int datasize = 1;
+    uint32_t chunk_count = 0;
+    int current_part = modbus_get_register(REG_CURRENT_PART);
+    uint32_t total_chunks = (fp_size + read_size - 1) / read_size;
+    
+    Serial.printf("[UFS_READ] Starting read of %u bytes in %u-byte chunks (%u total chunks)...\r\n",
+                  fp_size, read_size, total_chunks);
     
     while (datasize > 0) {
         uint32_t size = fp_size - file_offset;
@@ -962,6 +1060,8 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
             } else {
                 if (size == 0) {
                     ftp.qftp_file_close(fp);
+                    Serial.printf("[UFS_READ] Part %d complete. PSRAM total: %u bytes\r\n",
+                                  current_part, (uint32_t)s_psram_base64_length);
                     return 1;
                 }
                 datasize = ftp.qftp_file_read(fp, size, buf1);
@@ -969,10 +1069,18 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
             
             if (datasize == 0) {
                 ftp.qftp_file_close(fp);
+                Serial.printf("[UFS_READ] Part %d EOF at offset %u. PSRAM total: %u bytes\r\n",
+                              current_part, file_offset, (uint32_t)s_psram_base64_length);
                 return 1;
             }
             if (datasize < 0) {
                 retry++;
+                char retry_msg[128];
+                snprintf(retry_msg, sizeof(retry_msg),
+                         "[ERR %d] QFREAD failed at offset %u, retry %d/%d (code %d)",
+                         OTA_ERR_FILE_READ_RETRY, encodedOffset, retry, MAX_RETRY1, datasize);
+                add_log("UFS_ERR", "retrying", 0, OTA_ERR_FILE_READ_RETRY, current_part, retry_msg);
+                Serial.println(retry_msg);
                 ftp.qftp_file_seek(fp, encodedOffset, 0);
                 delay(10);
                 continue;
@@ -980,26 +1088,72 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size) {
             
             // Append to PSRAM base64 buffer
             if (!append_to_psram_buffer((const uint8_t*)buf1, datasize)) {
+                char err_msg[128];
+                snprintf(err_msg, sizeof(err_msg),
+                         "[ERR %d] PSRAM append failed at offset %u. Free PSRAM: %u bytes",
+                         OTA_ERR_PSRAM_APPEND, file_offset,
+                         #ifdef ESP_PLATFORM
+                         (uint32_t)ESP.getFreePsram());
+                         #else
+                         0u);
+                         #endif
+                add_log("PSRAM_ERR", "error", 0, OTA_ERR_PSRAM_APPEND, current_part, err_msg);
+                Serial.println(err_msg);
                 ftp.qftp_file_close(fp);
                 return 0;
             }
             
             file_offset += datasize;
             encodedOffset += datasize;
+            chunk_count++;
             success = true;
+            
+            // Feed the watchdog every chunk — prevents TWDT restart during 40+ second reads
+            FEED_WDT();
+            // Yield to FreeRTOS scheduler so WiFi / WebServer tasks stay alive
+            vTaskDelay(1);
             
             // Update offset indicator register
             setFloatValue(SPIFF_SET_BIT, file_offset);
+            
+            // Print ASCII progress bar to Serial every 16 chunks (~32KB)
+            if (chunk_count % 16 == 0 || file_offset >= fp_size) {
+                uint32_t pct = (fp_size > 0) ? (file_offset * 100UL / fp_size) : 100;
+                // Build bar: 40 chars wide
+                const int BAR_WIDTH = 40;
+                int filled = (int)(pct * BAR_WIDTH / 100);
+                char bar[BAR_WIDTH + 8];
+                bar[0] = '|';
+                for (int b = 1; b <= BAR_WIDTH; b++) {
+                    if (b < filled)      bar[b] = '=';
+                    else if (b == filled) bar[b] = '>';
+                    else                 bar[b] = ' ';
+                }
+                bar[BAR_WIDTH + 1] = '|';
+                bar[BAR_WIDTH + 2] = '\0';
+                Serial.printf("  %s (%uKB/%uKB) Part %d\r\n",
+                              bar,
+                              file_offset / 1024, fp_size / 1024,
+                              current_part);
+            }
         }
         
         if (!success) {
+            char err_msg[128];
+            snprintf(err_msg, sizeof(err_msg),
+                     "[ERR %d] Max retries (%d) exceeded at offset %u for Part %d",
+                     OTA_ERR_FILE_READ, MAX_RETRY1, encodedOffset, current_part);
+            add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_READ, current_part, err_msg);
+            Serial.println(err_msg);
             ftp.qftp_file_close(fp);
             return 0;
         }
-        delay(10);
+        delay(5);
     }
     
     ftp.qftp_file_close(fp);
+    Serial.printf("[UFS_READ] Part %d done. PSRAM total: %u bytes\r\n",
+                  current_part, (uint32_t)s_psram_base64_length);
     return 1;
 }
 
@@ -1112,6 +1266,43 @@ static uint8_t trigger_firmware_update_flow() {
     
     clean_psram_buffer(); // clear old buffers
     
+    // Pre-allocate the full PSRAM buffer up front to avoid mid-read realloc
+    // which requires 2.5x memory simultaneously (old + new block) and causes crashes.
+    // 500KB per part is a safe upper bound for 476856-byte files.
+    #ifdef ESP_PLATFORM
+    {
+        uint32_t total_parts = (uint32_t)getFloatValue(FW_TOTAL_PARTS);
+        size_t prealloc_size = total_parts * 500000UL;
+        uint8_t* pre_buf = NULL;
+        if (psramFound()) {
+            pre_buf = (uint8_t*)heap_caps_malloc(prealloc_size, MALLOC_CAP_SPIRAM);
+        } else {
+            pre_buf = (uint8_t*)malloc(prealloc_size);
+        }
+        if (pre_buf != NULL) {
+            s_psram_base64_buffer = pre_buf;
+            s_psram_base64_capacity = prealloc_size;
+            s_psram_base64_length = 0;
+            char alloc_log[128];
+            snprintf(alloc_log, sizeof(alloc_log),
+                     "PSRAM pre-alloc OK: %u bytes (%.1f KB) for %u parts",
+                     (uint32_t)prealloc_size, prealloc_size / 1024.0f, total_parts);
+            add_log("PSRAM_ALLOC", "ready", 2, OTA_ERR_NONE, 0, alloc_log);
+            Serial.printf("[PSRAM] %s\r\n", alloc_log);
+        } else {
+            char err_log[128];
+            snprintf(err_log, sizeof(err_log),
+                     "[ERR %d] PSRAM pre-alloc FAILED for %u bytes! Free PSRAM: %u bytes",
+                     OTA_ERR_PSRAM_ALLOC, (uint32_t)prealloc_size, (uint32_t)ESP.getFreePsram());
+            add_log("PSRAM_ERR", "error", 0, OTA_ERR_PSRAM_ALLOC, 0, err_log);
+            Serial.println(err_log);
+            modbus_set_status(STATUS_ERROR);
+            modbus_set_error(ERR_OTA_FLASH);
+            return 0;
+        }
+    }
+    #endif
+    
     setFloatValue(FW_DOWNLOAD_PROGRESS, 2);
     finalsize = 0;
     spiffs_offset = 0;
@@ -1119,6 +1310,7 @@ static uint8_t trigger_firmware_update_flow() {
     // PRE-CLEAR: Delete ALL old firmware part files from UFS before starting download
     add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "Pre-clearing ALL old OTA firmware files from modem UFS storage...");
     #ifdef ESP_PLATFORM
+    LOCK_GSM();
     for (int p = 1; p <= FW_UPDATE_NUM_PARTS; p++) {
         // Delete using the URL-derived filename of each configured URL
         String fname = extract_url_filename(s_custom_urls[p - 1].c_str());
@@ -1144,6 +1336,7 @@ static uint8_t trigger_firmware_update_flow() {
     }
     // Also delete combined firmware file
     module->sendCommand("AT+QFDEL=\"UFS:firm\"\r\n", "OK", 900, 1, 200, "+CME ERROR: 418");
+    UNLOCK_GSM();
     add_log("UFS_CLEAN", "cleanup", 0, 0, 0, "UFS pre-clean complete. Starting sequential part downloads.");
     #endif
     
@@ -1158,13 +1351,21 @@ static uint8_t trigger_firmware_update_flow() {
         }
         
         // Fetch part via HTTP/HTTPS AT command flow
+        LOCK_GSM();
         int k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
         Serial.println("return value: " + String(std::to_string(k).c_str()));
         if (k > 1) {
             k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
         }
+        UNLOCK_GSM();
         setFloatValue(ERROR4, k);
         if (k != 0) {
+            char dl_err[128];
+            snprintf(dl_err, sizeof(dl_err),
+                     "[ERR %d] getfirmwarefile failed for Part %d (ret=%d). Aborting OTA.",
+                     OTA_ERR_DOWNLOAD, part, k);
+            add_log("DL_ERR", "error", 0, OTA_ERR_DOWNLOAD, part, dl_err);
+            Serial.println(dl_err);
             setFloatValue(ERROR4, 11);
             clean_psram_buffer();
             return 0;
@@ -1181,7 +1382,8 @@ static uint8_t trigger_firmware_update_flow() {
         snprintf(ufs_log, sizeof(ufs_log), "Reading UFS file: UFS:%s (from URL: %s)", filename1.c_str(), fw_url.c_str());
         add_log("UFS_READ", "reading", 0, 0, part, ufs_log);
         
-        // Query file size dynamically using the URL-derived filename
+        // Query file size dynamically using the URL-derived filename & read file contents completely into PSRAM buffer
+        LOCK_GSM();
         #ifndef ESP_PLATFORM
         setFloatValue(FP_SIZE, strlen(s_parts_payloads[part - 1]));
         #else
@@ -1212,10 +1414,17 @@ static uint8_t trigger_firmware_update_flow() {
         
         // Copy UFS file contents completely into PSRAM buffer
         size_t before_len = s_psram_base64_length;
-        err_code = read_ufs_file_to_psram(filename1, 6144);
+        err_code = read_ufs_file_to_psram(filename1, 2048); // 2KB chunks to stay within modem QCOM buffer
         if (err_code == 0) {
+            char rd_err[128];
+            snprintf(rd_err, sizeof(rd_err),
+                     "[ERR %d] read_ufs_file_to_psram failed for Part %d. Aborting OTA.",
+                     OTA_ERR_FILE_READ, part);
+            add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_READ, part, rd_err);
+            Serial.println(rd_err);
             setFloatValue(FILE_UUID, 0);
             clean_psram_buffer();
+            UNLOCK_GSM();
             return 0;
         }
         size_t after_len = s_psram_base64_length;
@@ -1241,6 +1450,7 @@ static uint8_t trigger_firmware_update_flow() {
         snprintf(del_cmd, sizeof(del_cmd), "AT+QFDEL=\"UFS:%s\"\r\n", filename1.c_str());
         module->sendCommand(del_cmd, "OK", 1000, 1, 200, "+CME ERROR: 418");
         #endif
+        UNLOCK_GSM();
         
         setFloatValue(FW_DOWNLOAD_PROGRESS, 2 + (part * 2));
         delay(10);
@@ -1351,11 +1561,19 @@ static void handle_status() {
 }
 
 static void ota_background_task(void* pvParameters) {
+    s_ota_running = true;
     trigger_firmware_update_flow();
+    s_ota_running = false;
     vTaskDelete(NULL);
 }
 
 static void handle_trigger() {
+    if (s_ota_running) {
+        add_log("trigger", "error", 0, OTA_ERR_NONE, 0,
+                "[ERR] OTA already running! Ignoring duplicate trigger.");
+        server.send(409, "application/json", "{\"error\":\"OTA already running\"}");
+        return;
+    }
     s_log_count = 0;
     for (int i = 0; i < FW_UPDATE_NUM_PARTS; i++) {
         char arg_name[8];
@@ -1368,14 +1586,20 @@ static void handle_trigger() {
             s_custom_urls[i] = fallback_url;
         }
     }
-    xTaskCreate(ota_background_task, "ota_task", 8192, NULL, 5, NULL);
+    xTaskCreate(ota_background_task, "ota_task", 16384, NULL, 5, NULL);
+    // Stack doubled from 8192 to 16384 — qftp_file_read + trigger_firmware_update_flow
+    // combined stack depth exceeds 5KB with all local arrays.
     server.send(200, "application/json", "{\"status\":\"triggered\"}");
 }
 
 static void handle_test_gprs() {
     bool ok = false;
     #ifdef ESP_PLATFORM
-    ok = module->sendCommand("AT+CGATT?\r\n", "+CGATT: 1", 3000, 2);
+    init_gsm_mutex();
+    if (xSemaphoreTake(s_gsm_mutex, pdMS_TO_TICKS(2000)) == pdTRUE) {
+        ok = module->sendCommand("AT+CGATT?\r\n", "+CGATT: 1", 3000, 2);
+        xSemaphoreGive(s_gsm_mutex);
+    }
     #else
     ok = true;
     #endif
@@ -1431,7 +1655,11 @@ static void handle_ping_server() {
 static void handle_clear_cache() {
     add_log("cleanup", "working", 0, 0, 0, "Manual request to clean UFS cache & files...");
     #ifdef ESP_PLATFORM
-    module->sendCommand("AT+QFDEL=\"UFS:*\"\r\n", "OK", 2000, 1);
+    init_gsm_mutex();
+    if (xSemaphoreTake(s_gsm_mutex, pdMS_TO_TICKS(5000)) == pdTRUE) {
+        module->sendCommand("AT+QFDEL=\"UFS:*\"\r\n", "OK", 2000, 1);
+        xSemaphoreGive(s_gsm_mutex);
+    }
     #else
     // mock UFS clean
     #endif
@@ -1484,6 +1712,16 @@ static void handle_write_register() {
 
 static void handle_list_modem_files() {
     #ifdef ESP_PLATFORM
+    init_gsm_mutex();
+    if (xSemaphoreTake(s_gsm_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        // Modem is busy with OTA — tell the GUI clearly instead of returning empty
+        String busy_json = "{\n  \"busy\": true,\n  \"files\": [\n";
+        busy_json += "    {\"name\": \"[Modem busy - OTA in progress]\", \"size\": 0}\n";
+        busy_json += "  ]\n}";
+        server.send(200, "application/json", busy_json);
+        return;
+    }
+    
     while (Serial1.available()) Serial1.read();
     Serial1.print("AT+QFLST=\"UFS:*\"\r\n");
     uint32_t start = millis();
@@ -1528,6 +1766,7 @@ static void handle_list_modem_files() {
     }
     json += "\n  ]\n}";
     server.send(200, "application/json", json);
+    xSemaphoreGive(s_gsm_mutex);
     #else
     String json = "{\n  \"files\": [\n"
                   "    {\"name\": \"UFS:otafw_part1.b64\", \"size\": 744155},\n"
@@ -1545,9 +1784,9 @@ static void handle_esp32_storage() {
     uint32_t flash_size = ESP.getFlashChipSize();
     uint32_t free_heap = ESP.getFreeHeap();
     uint32_t psram_size = 0;
-    #if CONFIG_SPIRAM_SUPPORT
-    psram_size = ESP.getPsramSize();
-    #endif
+    if (psramFound()) {
+        psram_size = ESP.getPsramSize();
+    }
     
     String json = "{\n";
     json += "  \"flash_total\": " + String(flash_size) + ",\n";
