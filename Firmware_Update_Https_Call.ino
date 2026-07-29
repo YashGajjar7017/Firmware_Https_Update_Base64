@@ -5,7 +5,8 @@
 #endif
 #include "firmware_update.h"
 #include "modbus_state.h"
-#include "web_gui.h"
+#include "def.h"
+//#include "web_gui.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +72,7 @@ static void init_gsm_mutex() {
 
 // Volatile flag so HTTP handlers can see when OTA is actively running
 static volatile bool s_ota_running = false;
+static volatile bool s_ota_abort = false;
 
 // AT command macros matching requirements
 #define FTP_FILE_OPEN "AT+QFOPEN=\"%s\",0\r\n"
@@ -88,7 +90,7 @@ static volatile bool s_ota_running = false;
 #define SPIFF_SET_BIT        4
 #define FP_SIZE              5
 
-#define MAX_RETRY1 3
+#define MAX_RETRY1 5
 
 // Log entry structure for UI display
 struct LogEntry {
@@ -749,7 +751,7 @@ static qftp ftp(module);
 // Static buffers required for reading
 static uint32_t finalsize = 0;
 static uint32_t spiffs_offset = 0;
-static uint8_t buf1[8192];
+static uint8_t buf1[2048];
 
 // Static buffers for qftp_file_read — kept off the OTA task stack to prevent overflow
 // (Only one qftp_file_read runs at a time, so static is safe)
@@ -1130,6 +1132,11 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size, int part) {
                   fp_size, read_size, total_chunks);
     
     while (datasize > 0) {
+        if (s_ota_abort) {
+            Serial.println("[UFS_READ] Read aborted by user command.");
+            ftp.qftp_file_close(fp);
+            return 0;
+        }
         uint32_t size = fp_size - file_offset;
         int retry = 0;
         bool success = false;
@@ -1398,6 +1405,44 @@ uint8_t flash_binary_from_psram() {
 
 
 
+static void list_ufs_files_to_log() {
+    #ifdef ESP_PLATFORM
+    LOCK_GSM();
+    while (Serial1.available()) Serial1.read();
+    Serial1.print("AT+QFLST=\"UFS:*\"\r\n");
+    uint32_t start = millis();
+    int idx = 0;
+    char list_buf[2048] = {0};
+    while (millis() - start < 2000) {
+        while (Serial1.available()) {
+            char c = Serial1.read();
+            if (idx < (int)sizeof(list_buf) - 1) {
+                list_buf[idx++] = c;
+            }
+        }
+        if (strstr(list_buf, "OK") != NULL || strstr(list_buf, "ERROR") != NULL) {
+            break;
+        }
+        delay(10);
+    }
+    UNLOCK_GSM();
+    
+    Serial.println("[UFS_LIST] Current files in UFS storage:");
+    char* line = strtok(list_buf, "\r\n");
+    while (line != NULL) {
+        if (strstr(line, "+QFLST:") != NULL) {
+            Serial.printf("  %s\r\n", line);
+            add_log("UFS_LIST", "cleanup", 0, 0, 0, line);
+        }
+        line = strtok(NULL, "\r\n");
+    }
+    #else
+    Serial.println("[UFS_LIST] [Mock] Current files in UFS storage:");
+    Serial.println("  +QFLST: \"UFS:otafw_part1.b64\",476856");
+    add_log("UFS_LIST", "cleanup", 0, 0, 0, "+QFLST: \"UFS:otafw_part1.b64\",476856");
+    #endif
+}
+
 // =========================================================================
 // Main orchestrator flow based on user specification
 // =========================================================================
@@ -1518,6 +1563,12 @@ static uint8_t trigger_firmware_update_flow() {
     #endif
     
     for (int part = 1; part <= getFloatValue(FW_TOTAL_PARTS); part++) {
+        if (s_ota_abort) {
+            add_log("ota_flash", "aborted", 0, 0, part, "OTA update aborted by user command.");
+            Serial.println("[OTA] Process aborted by user command.");
+            clean_psram_buffer();
+            return 0;
+        }
         modbus_set_current_part(part);
         
         String fw_url = s_custom_urls[part - 1];
@@ -1527,12 +1578,26 @@ static uint8_t trigger_firmware_update_flow() {
             fw_url = fallback_url;
         }
         
-        // Fetch part via HTTP/HTTPS AT command flow
+        // Fetch part via HTTP/HTTPS AT command flow with up to 5 retries on noise/error
         LOCK_GSM();
-        int k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
-        Serial.println("return value: " + String(std::to_string(k).c_str()));
-        if (k > 1) {
+        int k = -1;
+        for (int retry = 1; retry <= 5; retry++) {
             k = gprs.getfirmwarefile(fw_url, devimei, username, password, part);
+            Serial.printf("[HTTP_DL] Part %d download attempt %d/5 returned: %d\n", part, retry, k);
+            if (k == 0) {
+                break; // Succeeded! Move immediately forward
+            }
+            // If noise/error occurred, log it and retry unless we hit max attempts
+            if (retry < 5) {
+                char retry_msg[128];
+                snprintf(retry_msg, sizeof(retry_msg), "[WARN] Part %d download failed (ret=%d), retrying (%d/5)...", part, k, retry + 1);
+                add_log("DL_RETRY", "retrying", 0, 0, part, retry_msg);
+                #ifdef ESP_PLATFORM
+                delay(1000); // Wait 1 second before retrying on ESP32
+                #else
+                Sleep(1000); // Wait 1 second before retrying on PC simulation
+                #endif
+            }
         }
         UNLOCK_GSM();
         setFloatValue(ERROR4, k);
@@ -1625,7 +1690,7 @@ static uint8_t trigger_firmware_update_flow() {
         
         // Explicitly mark this part as completed and stored in PSRAM
         modbus_set_register(5 + (part - 1) * 5, 1); // Stored in PSRAM = 1 (Yes)
-        modbus_set_register(1 + (part - 1) * 5, (part - 1) * 10 + 9); // Status = Completed (9, 19, 29, 39)
+        modbus_set_register(1 + (part - 1) * 5, part * 10 + 9); // Status = Completed (19, 29, 39, 49)
         modbus_set_register(3 + (part - 1) * 5, 100); // Progress = 100
         
         size_t after_len = s_psram_binary_length;
@@ -1659,6 +1724,9 @@ static uint8_t trigger_firmware_update_flow() {
     
     resetWatchdog();
     delay(100);
+    
+    // List remaining UFS files to confirm status/free space
+    list_ufs_files_to_log();
     
     // Now start flashing from PSRAM binary accumulator buffer to OTA partition
     err_code = flash_binary_from_psram();
@@ -1699,9 +1767,74 @@ static uint8_t trigger_firmware_update_flow() {
 }
 
 #ifdef ESP_PLATFORM
+static void ota_background_task(void* pvParameters) {
+    s_ota_running = true;
+    trigger_firmware_update_flow();
+    s_ota_running = false;
+    vTaskDelete(NULL);
+}
+#endif
+
+#ifndef ESP_PLATFORM
+static void trigger_ota_update_thread();
+#endif
+
+void handle_modbus_command(uint16_t cmd) {
+    Serial.printf("[Modbus CMD] Received command: %d\n", cmd);
+    switch (cmd) {
+        case Start_Firmware_Process:
+        case Firmware_Update_Restart: {
+            s_ota_abort = false;
+            #ifdef ESP_PLATFORM
+            if (!s_ota_running) {
+                s_log_count = 0;
+                xTaskCreate(ota_background_task, "ota_task", 16384, NULL, 5, NULL);
+            } else {
+                Serial.println("[Modbus CMD] OTA already running, ignoring start/restart.");
+            }
+            #else
+            trigger_ota_update_thread();
+            #endif
+            break;
+        }
+        case Abort_Firmware_Process: {
+            s_ota_abort = true;
+            Serial.println("[Modbus CMD] Abort requested.");
+            break;
+        }
+        case GPRS_Restart: {
+            #ifdef ESP_PLATFORM
+            Serial.println("[Modbus CMD] GPRS Restart requested.");
+            digitalWrite(GSM_PWRKEY_PIN, LOW);
+            delay(2000);
+            digitalWrite(GSM_PWRKEY_PIN, HIGH);
+            delay(5000); // Wait for modem bootup
+            #else
+            Serial.println("[Modbus CMD] Mock GPRS Restart completed.");
+            #endif
+            break;
+        }
+        case End_Firmware_Update_Process: {
+            s_ota_abort = false;
+            modbus_set_status(STATUS_IDLE);
+            modbus_set_progress(0);
+            modbus_set_error(ERR_NONE);
+            modbus_set_current_part(0);
+            clean_psram_buffer();
+            Serial.println("[Modbus CMD] Process ended and registers reset.");
+            break;
+        }
+        default:
+            Serial.printf("[Modbus CMD] Unknown command: %d\n", cmd);
+            break;
+    }
+}
+
+#ifdef ESP_PLATFORM
 // =========================================================================
 // ESP32 Web Server Endpoints
 // =========================================================================
+#if 0
 static WebServer server(80);
 
 static void handle_root() {
@@ -1725,7 +1858,7 @@ static void handle_status() {
     int current_part = 1;
     for (int p = 1; p <= 4; p++) {
         uint16_t stat = modbus_get_register(1 + (p - 1) * 5);
-        if (stat != 0 && stat != (p - 1) * 10 + 9) { // not completed
+        if (stat != 0 && stat != p * 10 + 9) { // not completed
             current_part = p;
             break;
         }
@@ -1740,7 +1873,7 @@ static void handle_status() {
     
     for (int p = 1; p <= 4; p++) {
         uint16_t stat = modbus_get_register(1 + (p - 1) * 5);
-        int local_type = stat - (p - 1) * 10;
+        int local_type = stat - p * 10;
         if (stat == 0) {
             all_completed = false;
         } else {
@@ -2055,6 +2188,7 @@ static void handle_esp32_storage() {
     server.send(200, "application/json", json);
     #endif
 }
+#endif
 
 #ifndef MODEM_RX_PIN
 #define MODEM_RX_PIN 1
@@ -2224,11 +2358,36 @@ void setup() {
     digitalWrite(GSM_EN_PIN, HIGH);
     delay(500);
     
-    // Pulse PWRKEY low (standard active-low power key for Quectel)
-    digitalWrite(GSM_PWRKEY_PIN, LOW);
-    delay(2000);
-    digitalWrite(GSM_PWRKEY_PIN, HIGH);
-    delay(3000); // Wait for modem bootup
+    // Open Serial1 temporarily to check if modem is alive
+    Serial1.begin(MODEM_BAUD_RATE, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
+    delay(100);
+    
+    bool modem_on = false;
+    for (int i = 0; i < 3; i++) {
+        while (Serial1.available()) Serial1.read();
+        Serial1.print("AT\r\n");
+        uint32_t check_start = millis();
+        while (millis() - check_start < 500) {
+            if (Serial1.available()) {
+                String resp = Serial1.readString();
+                if (resp.indexOf("OK") != -1) {
+                    modem_on = true;
+                    break;
+                }
+            }
+        }
+        if (modem_on) break;
+    }
+    
+    if (!modem_on) {
+        Serial.println("[GSM] Modem is OFF. Pulsing PWRKEY low to turn ON...");
+        digitalWrite(GSM_PWRKEY_PIN, LOW);
+        delay(2000);
+        digitalWrite(GSM_PWRKEY_PIN, HIGH);
+        delay(5000); // Wait for modem bootup
+    } else {
+        Serial.println("[GSM] Modem is already ON. Skipping PWRKEY toggling.");
+    }
     #endif
     
     // UART Buffer configuration and port opening from requirements
@@ -2241,6 +2400,7 @@ void setup() {
     Serial.print("AP IP address: ");
     Serial.println(IP);
     
+    /*
     server.on("/", HTTP_GET, handle_root);
     server.on("/api/status", HTTP_GET, handle_status);
     server.on("/api/trigger", HTTP_POST, handle_trigger);
@@ -2253,6 +2413,7 @@ void setup() {
     server.on("/api/list_esp32_storage", HTTP_GET, handle_esp32_storage);
     server.begin();
     Serial.println("HTTP Server started on Port 80");
+    */
     
     #ifdef ESP_PLATFORM
     xTaskCreate(modbus_tcp_task, "modbus_tcp_task", 4096, NULL, 4, NULL);
@@ -2260,9 +2421,17 @@ void setup() {
 }
 
 void loop() {
-    server.handleClient();
+    // server.handleClient();
     readholdingregister_modbus();
     writeholdingregister_modbus();
+    
+    // Poll Modbus command register 41 (REG_START_FIRMWARE_PROCESS)
+    uint16_t cmd = modbus_get_register(REG_START_FIRMWARE_PROCESS);
+    if (cmd != 0) {
+        handle_modbus_command(cmd);
+        modbus_set_register(REG_START_FIRMWARE_PROCESS, 0); // Clear command register after processing
+    }
+    
     delay(2);
 }
 
@@ -2321,6 +2490,7 @@ static DWORD WINAPI reboot_async_thread(LPVOID lpParam) {
     return 0;
 }
 
+#if 0
 static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
     (void)lpParam;
     WSADATA wsaData;
@@ -2609,13 +2779,32 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
     WSACleanup();
     return 0;
 }
+#endif
 
 int main(void) {
-    HANDLE thread_handle = CreateThread(NULL, 0, win_http_server_thread, NULL, 0, NULL);
-    if (thread_handle != NULL) {
-        WaitForSingleObject(thread_handle, INFINITE);
-        CloseHandle(thread_handle);
+    printf("PC Simulator: HTTP Web GUI disabled. Simulating Modbus Write of 1 to Register 41...\n");
+    modbus_set_register(REG_START_FIRMWARE_PROCESS, 1);
+    
+    // Simulate the loop poll
+    while (true) {
+        uint16_t cmd = modbus_get_register(REG_START_FIRMWARE_PROCESS);
+        if (cmd != 0) {
+            handle_modbus_command(cmd);
+            modbus_set_register(REG_START_FIRMWARE_PROCESS, 0);
+        }
+        
+        // If update thread is running, let it proceed
+        Sleep(10);
+        
+        // If update was triggered and finished, break the loop
+        if (s_parts_payloads[0] && !s_update_in_progress && cmd == 0) {
+            // Wait a bit to ensure it finished completely
+            Sleep(500);
+            if (!s_update_in_progress) break;
+        }
     }
+    
+    printf("PC Simulator: OTA update flow complete.\n");
     return 0;
 }
 #endif

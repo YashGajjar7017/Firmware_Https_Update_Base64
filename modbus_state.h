@@ -24,14 +24,15 @@ typedef enum {
     REG_FILE4_STATUS = 16,
     REG_FILE4_PROGRESS = 18,
     REG_FILE4_PSRAM = 20,
-    
     // Obsolete but kept for code compatibility
     REG_DOWNLOAD_STATUS = 21,
     REG_PROGRESS_PERCENT = 22,
     REG_ERROR_CODE = 23,
     REG_CURRENT_PART = 0,
+
+    REG_START_FIRMWARE_PROCESS = 41,
     
-    NUM_MODBUS_REGISTERS = 24
+    NUM_MODBUS_REGISTERS = 42
 } ModbusRegisterOffset;
 
 // Download Status values (Register 0)

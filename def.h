@@ -1,32 +1,44 @@
-#include "Firmware_Update_Https_Call.ino"
+#ifndef DEF_H
+#define DEF_H
+
+// Firmware_Process_Start
+#define Start_Firmware_Process 1
+#define Abort_Firmware_Process 3
+#define GPRS_Restart 5
+#define Firmware_Update_Restart 7
+#define End_Firmware_Update_Process 9
 
 // Base64_File1_Status
-#define Base64_File1_Downloading 1
-#define Base64_File1_Decompressing 3
-#define Base64_File1_Flashing 5
-#define Base64_File1_Error 7
-#define Base64_File1_Completed 9
+#define Base64_File1_Downloading 11
+#define Base64_File1_Decompressing 13
+#define Base64_File1_Flashing 15
+#define Base64_File1_Error 17
+#define Base64_File1_Completed 19
 
 // Base64_File2_Status
-#define Base64_File2_Downloading 11
-#define Base64_File2_Decompressing 13
-#define Base64_File2_Flashing 15
-#define Base64_File2_Error 17
-#define Base64_File2_Completed 19
+#define Base64_File2_Downloading 21
+#define Base64_File2_Decompressing 23
+#define Base64_File2_Flashing 25
+#define Base64_File2_Error 27
+#define Base64_File2_Completed 29
 
 // Base64_File3_Status
-#define Base64_File3_Downloading 21
-#define Base64_File3_Decompressing 23
-#define Base64_File3_Flashing 25
-#define Base64_File3_Error 27
-#define Base64_File3_Completed 29
+#define Base64_File3_Downloading 31
+#define Base64_File3_Decompressing 33
+#define Base64_File3_Flashing 35
+#define Base64_File3_Error 37
+#define Base64_File3_Completed 39
 
 // Base64_File4_Status
-#define Base64_File4_Downloading 31
-#define Base64_File4_Decompressing 33
-#define Base64_File4_Flashing 35
-#define Base64_File4_Error 37
-#define Base64_File4_Completed 39
+#define Base64_File4_Downloading 41
+#define Base64_File4_Decompressing 43
+#define Base64_File4_Flashing 45
+#define Base64_File4_Error 47
+#define Base64_File4_Completed 49
+
+// PSRAM_Buffer_Intailsed_Value 
+#define PSRAM_Buffer_Size 2094
+#define PSRAM_Chunk_Size 20045
 
 void readholdingregister_modbus();
 void writeholdingregister_modbus();
@@ -46,3 +58,5 @@ void modbus_set_status(DownloadStatus status);
 void modbus_set_progress(uint16_t progress);
 void modbus_set_error(UpdateErrorCode error);
 void modbus_set_current_part(uint16_t part);
+
+#endif // DEF_H
