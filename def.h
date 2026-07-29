@@ -40,8 +40,16 @@
 #define PSRAM_Buffer_Size 2094
 #define PSRAM_Chunk_Size 20045
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void readholdingregister_modbus();
 void writeholdingregister_modbus();
+
+#ifdef __cplusplus
+}
+#endif
 
 /**
  * @brief Thread-safe register write

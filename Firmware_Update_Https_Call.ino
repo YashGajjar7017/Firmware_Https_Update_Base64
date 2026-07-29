@@ -74,6 +74,23 @@ static void init_gsm_mutex() {
 static volatile bool s_ota_running = false;
 static volatile bool s_ota_abort = false;
 
+#ifndef MODEM_RX_PIN
+#define MODEM_RX_PIN 1
+#endif
+#ifndef MODEM_TX_PIN
+#define MODEM_TX_PIN 2
+#endif
+#ifndef MODEM_BAUD_RATE
+#define MODEM_BAUD_RATE 115200
+#endif
+
+#ifndef GSM_EN_PIN
+#define GSM_EN_PIN 21
+#endif
+#ifndef GSM_PWRKEY_PIN
+#define GSM_PWRKEY_PIN 5
+#endif
+
 // AT command macros matching requirements
 #define FTP_FILE_OPEN "AT+QFOPEN=\"%s\",0\r\n"
 #define FTP_FILE_SEEK "AT+QFSEEK=%d,%d,%d\r\n"
@@ -2190,22 +2207,6 @@ static void handle_esp32_storage() {
 }
 #endif
 
-#ifndef MODEM_RX_PIN
-#define MODEM_RX_PIN 1
-#endif
-#ifndef MODEM_TX_PIN
-#define MODEM_TX_PIN 2
-#endif
-#ifndef MODEM_BAUD_RATE
-#define MODEM_BAUD_RATE 115200
-#endif
-
-#ifndef GSM_EN_PIN
-#define GSM_EN_PIN 21
-#endif
-#ifndef GSM_PWRKEY_PIN
-#define GSM_PWRKEY_PIN 5
-#endif
 
 #ifdef ESP_PLATFORM
 #include <WiFi.h>
