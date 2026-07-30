@@ -31,8 +31,16 @@ typedef enum {
     REG_CURRENT_PART = 0,
 
     REG_START_FIRMWARE_PROCESS = 41,
+
+    REG_ERROR_COUNT_1 = 51,
+    REG_ERROR_COUNT_2 = 53,
+    REG_ERROR_COUNT_3 = 55,
+    REG_ERROR_COUNT_4 = 57,
+
+    REG_PSRAM_BUFFER_SIZE = 59,
+    REG_PSRAM_CHUNK_SIZE = 61,
     
-    NUM_MODBUS_REGISTERS = 42
+    NUM_MODBUS_REGISTERS = 62
 } ModbusRegisterOffset;
 
 // Download Status values (Register 0)
@@ -70,6 +78,11 @@ void modbus_set_status(DownloadStatus status);
 void modbus_set_progress(uint16_t progress);
 void modbus_set_error(UpdateErrorCode error);
 void modbus_set_current_part(uint16_t part);
+
+uint16_t get_virtual_file(uint16_t part);
+uint16_t get_virtual_progress(uint16_t part, uint16_t part_progress);
+
+void modbus_init_mutex(void);
 
 #ifdef __cplusplus
 }

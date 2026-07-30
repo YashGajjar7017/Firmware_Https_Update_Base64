@@ -55,6 +55,14 @@ uint16_t modbus_get_register(uint16_t reg_offset) {
 
 static uint16_t s_current_part = 1;
 
+uint16_t get_virtual_file(uint16_t part) {
+    return part;
+}
+
+uint16_t get_virtual_progress(uint16_t part, uint16_t part_progress) {
+    return part_progress;
+}
+
 void modbus_set_current_part(uint16_t part) {
     if (part >= 1 && part <= 4) {
         s_current_part = part;
@@ -66,10 +74,11 @@ void modbus_set_status(DownloadStatus status) {
     // Keep obsolete register updated for code compatibility
     modbus_set_register(REG_DOWNLOAD_STATUS, (uint16_t)status);
     
-    if (s_current_part < 1 || s_current_part > 4) return;
+    uint16_t v_file = get_virtual_file(s_current_part);
+    if (v_file < 1 || v_file > 4) return;
     
-    uint16_t base_status_val = s_current_part * 10;
-    uint16_t reg_offset = 1 + (s_current_part - 1) * 5;
+    uint16_t base_status_val = v_file * 10;
+    uint16_t reg_offset = 1 + (v_file - 1) * 5;
     
     if (status == STATUS_DOWNLOADING) {
         modbus_set_register(reg_offset, base_status_val + 1); // Downloading (11, 21, 31, 41)
@@ -119,8 +128,9 @@ void modbus_set_progress(uint16_t progress) {
             modbus_set_register(3 + (p - 1) * 5, progress);
         }
     } else {
-        if (s_current_part >= 1 && s_current_part <= 4) {
-            modbus_set_register(3 + (s_current_part - 1) * 5, progress);
+        uint16_t v_file = get_virtual_file(s_current_part);
+        if (v_file >= 1 && v_file <= 4) {
+            modbus_set_register(3 + (v_file - 1) * 5, progress);
         }
     }
 }
@@ -128,8 +138,17 @@ void modbus_set_progress(uint16_t progress) {
 void modbus_set_error(UpdateErrorCode error) {
     modbus_set_register(REG_ERROR_CODE, (uint16_t)error);
     
-    if (error != ERR_NONE && s_current_part >= 1 && s_current_part <= 4) {
-        uint16_t base_status_val = s_current_part * 10;
-        modbus_set_register(1 + (s_current_part - 1) * 5, base_status_val + 7); // Error (17, 27, 37, 47)
+    if (error != ERR_NONE) {
+        uint16_t v_file = get_virtual_file(s_current_part);
+        if (v_file >= 1 && v_file <= 4) {
+            uint16_t base_status_val = v_file * 10;
+            modbus_set_register(1 + (v_file - 1) * 5, base_status_val + 7); // Error (17, 27, 37, 47)
+        }
     }
+}
+
+void modbus_init_mutex(void) {
+#ifdef ESP_PLATFORM
+    init_mutex();
+#endif
 }

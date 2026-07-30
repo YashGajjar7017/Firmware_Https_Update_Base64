@@ -107,7 +107,7 @@ static volatile bool s_ota_abort = false;
 #define SPIFF_SET_BIT        4
 #define FP_SIZE              5
 
-#define MAX_RETRY1 5
+#define MAX_RETRY1 3
 
 // Log entry structure for UI display
 struct LogEntry {
@@ -194,6 +194,7 @@ static void setFloatValue(int key, float val) {
         
         // Map values to Modbus registers for the UI Dashboard
         if (key == FW_DOWNLOAD_PROGRESS) {
+            float max_download_val = 2.0f + FW_UPDATE_NUM_PARTS * 2.0f;
             if (val == -1) {
                 modbus_set_status(STATUS_ERROR);
             } else if (val == 1) {
@@ -202,21 +203,18 @@ static void setFloatValue(int key, float val) {
             } else if (val == 2) {
                 modbus_set_status(STATUS_DECODING);
                 modbus_set_progress(10);
-            } else if (val >= 3 && val <= 10) {
+            } else if (val >= 3 && val <= max_download_val) {
                 int part = ((int)val - 1) / 2;
                 if ((int)val % 2 == 1) {
                     modbus_set_progress(((part - 1) * 100 / FW_UPDATE_NUM_PARTS) + 5);
                 } else {
                     modbus_set_progress(part * 100 / FW_UPDATE_NUM_PARTS);
                 }
-            } else if (val == 11) {
-                modbus_set_status(STATUS_DECODING);
-                modbus_set_progress(95);
-            } else if (val >= 12 && val < 18) {
+            } else if (val > max_download_val && val < max_download_val + 8.0f) {
                 modbus_set_status(STATUS_FLASHING);
-                int flash_p = 95 + (int)(((val - 12.0f) / 6.0f) * 4.0f);
+                int flash_p = 95 + (int)(((val - max_download_val) / 8.0f) * 5.0f);
                 modbus_set_progress(flash_p);
-            } else if (val >= 18) {
+            } else if (val >= max_download_val + 8.0f) {
                 modbus_set_status(STATUS_COMPLETE);
                 modbus_set_progress(100);
             }
@@ -1229,6 +1227,15 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size, int part) {
             chunk_count++;
             success = true;
             
+            #ifdef ESP_PLATFORM
+            Serial.printf("[UFS_READ] Chunk %u (%d bytes) successfully downloaded into PSRAM. Total: %u bytes\r\n", 
+                          chunk_count, datasize, (uint32_t)s_psram_base64_length);
+            #else
+            printf("[UFS_READ] Chunk %u (%d bytes) successfully downloaded into PSRAM. Total: %u bytes\n", 
+                   chunk_count, datasize, (uint32_t)s_psram_base64_length);
+            fflush(stdout);
+            #endif
+            
             // Feed the watchdog every chunk — prevents TWDT restart during 40+ second reads
             FEED_WDT();
             // Yield to FreeRTOS scheduler so WiFi / WebServer tasks stay alive
@@ -1268,6 +1275,12 @@ uint8_t read_ufs_file_to_psram(String filename, uint16_t read_size, int part) {
             add_log("UFS_ERR", "error", 0, OTA_ERR_FILE_READ, current_part, err_msg);
             Serial.println(err_msg);
             ftp.qftp_file_close(fp);
+            
+            // Set error in register 51 to 57
+            uint16_t v_file = get_virtual_file(current_part);
+            uint16_t reg_err_addr = 51 + (v_file - 1) * 2;
+            modbus_set_register(reg_err_addr, OTA_ERR_FILE_READ_RETRY);
+            
             return 0;
         }
         delay(5);
@@ -1364,7 +1377,8 @@ static size_t sanitize_psram_base64() {
 uint8_t flash_binary_from_psram() {
     add_log("ota_flash", "flashing", 0, 0, 0, "Starting ESP32 OTA flashing from PSRAM binary buffer...");
     modbus_set_status(STATUS_FLASHING);
-    setFloatValue(FW_DOWNLOAD_PROGRESS, 10.0f);
+    float max_download_val = 2.0f + FW_UPDATE_NUM_PARTS * 2.0f;
+    setFloatValue(FW_DOWNLOAD_PROGRESS, max_download_val);
     
     if (s_psram_binary_length == 0 || s_psram_binary_buffer == NULL) {
         add_log("ota_flash", "error", 0, OTA_ERR_UPDATE_WRITE, 0, "[ERR] Binary buffer is empty!");
@@ -1406,7 +1420,7 @@ uint8_t flash_binary_from_psram() {
         processed_bin += chunk_size;
         finalsize += chunk_size;
         
-        float flash_progress = 10.0f + ((float)processed_bin / s_psram_binary_length) * 7.0f;
+        float flash_progress = max_download_val + ((float)processed_bin / s_psram_binary_length) * 7.0f;
         setFloatValue(FW_DOWNLOAD_PROGRESS, flash_progress);
         
         char log_details[256];
@@ -1469,10 +1483,14 @@ static uint8_t trigger_firmware_update_flow() {
     String password = "password";
     uint8_t err_code = 0;
     
-    // Clear Modbus registers 1 to 20 at start of update
+    // Clear Modbus registers 1 to 20 and error registers 51 to 57 at start of update
     for (int r = 1; r <= 20; r++) {
         modbus_set_register(r, 0);
     }
+    modbus_set_register(ErrorCount_1, 0);
+    modbus_set_register(ErrorCount_2, 0);
+    modbus_set_register(ErrorCount_3, 0);
+    modbus_set_register(ErrorCount_4, 0);
     
     modbus_set_error(ERR_NONE);
     modbus_set_status(STATUS_DOWNLOADING);
@@ -1674,9 +1692,29 @@ static uint8_t trigger_firmware_update_flow() {
         // Reset base64 buffer length for current part
         s_psram_base64_length = 0;
         
-        // Copy UFS file contents completely into PSRAM buffer
+        // Copy UFS file contents completely into PSRAM buffer in chunks
         size_t before_len = s_psram_binary_length;
-        err_code = read_ufs_file_to_psram(filename1, 2048, part); // 2KB chunks to stay within modem QCOM buffer
+        
+        // Retrieve chunk size dynamically from Modbus Register 59 (PSRAM_Buffer_Size)
+        uint16_t reg_val = modbus_get_register(PSRAM_Buffer_Size);
+        uint32_t read_chunk_size = 2048; // Default to 2KB
+        if (reg_val > 0) {
+            if (reg_val <= 32) {
+                read_chunk_size = reg_val * 1024;
+            } else {
+                read_chunk_size = reg_val;
+            }
+        }
+        
+        // Write the actual chunk size in bytes to Modbus Register 61 (PSRAM_Chunk_Size)
+        modbus_set_register(PSRAM_Chunk_Size, read_chunk_size);
+        
+        char chunk_log[128];
+        snprintf(chunk_log, sizeof(chunk_log), "Using read chunk size: %u bytes (from Reg 59: %u)", (unsigned int)read_chunk_size, reg_val);
+        add_log("UFS_READ", "reading", 0, 0, part, chunk_log);
+        Serial.printf("[UFS_READ] %s\n", chunk_log);
+        
+        err_code = read_ufs_file_to_psram(filename1, read_chunk_size, part);
         if (err_code == 0) {
             char rd_err[128];
             snprintf(rd_err, sizeof(rd_err),
@@ -1705,10 +1743,11 @@ static uint8_t trigger_firmware_update_flow() {
             return 0;
         }
         
-        // Explicitly mark this part as completed and stored in PSRAM
-        modbus_set_register(5 + (part - 1) * 5, 1); // Stored in PSRAM = 1 (Yes)
-        modbus_set_register(1 + (part - 1) * 5, part * 10 + 9); // Status = Completed (19, 29, 39, 49)
-        modbus_set_register(3 + (part - 1) * 5, 100); // Progress = 100
+        // Explicitly mark virtual file completed and stored in PSRAM immediately
+        uint16_t v_file = get_virtual_file(part);
+        modbus_set_register(5 + (v_file - 1) * 5, 1); // Stored in PSRAM = 1 (Yes)
+        modbus_set_register(1 + (v_file - 1) * 5, v_file * 10 + 9); // Status = Completed (19, 29, 39, 49)
+        modbus_set_register(3 + (v_file - 1) * 5, 100); // Progress = 100
         
         size_t after_len = s_psram_binary_length;
         if (part >= 1 && part <= FW_UPDATE_NUM_PARTS) {
@@ -1760,6 +1799,8 @@ static uint8_t trigger_firmware_update_flow() {
     // Commit the OTA partition
     if (Update.end(true)) {
         setFloatValue(ERROR4, 9);
+        float max_download_val = 2.0f + FW_UPDATE_NUM_PARTS * 2.0f;
+        setFloatValue(FW_DOWNLOAD_PROGRESS, max_download_val + 8.0f);
         modbus_set_status(STATUS_COMPLETE);
         modbus_set_progress(100);
         add_log("system", "restarting", 100, 0, FW_UPDATE_NUM_PARTS, "OTA Flashing complete. Restarting ESP32...");
@@ -2083,11 +2124,12 @@ static void handle_write_register() {
         
         // Synchronize float registers for simulation
         if (reg == REG_DOWNLOAD_STATUS) {
+            float max_val = 2.0f + FW_UPDATE_NUM_PARTS * 2.0f;
             if (val == STATUS_IDLE) setFloatValue(FW_DOWNLOAD_PROGRESS, 0.0f);
             else if (val == STATUS_DOWNLOADING) setFloatValue(FW_DOWNLOAD_PROGRESS, 1.0f);
             else if (val == STATUS_DECODING) setFloatValue(FW_DOWNLOAD_PROGRESS, 2.0f);
-            else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, 3.0f);
-            else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, 18.0f);
+            else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, max_val);
+            else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, max_val + 8.0f);
             else if (val == STATUS_ERROR) setFloatValue(FW_DOWNLOAD_PROGRESS, -1.0f);
         } else if (reg == REG_ERROR_CODE) {
             setFloatValue(ERROR4, (float)val);
@@ -2218,91 +2260,93 @@ static void modbus_tcp_task(void* pvParameters) {
     s_modbus_server.begin();
     Serial.println("[Modbus TCP] Server started on port 502");
     
-    uint8_t buffer[260];
+    uint8_t buffer[512];
     
     while (true) {
         WiFiClient client = s_modbus_server.available();
         if (client) {
             Serial.println("[Modbus TCP] Client connected");
             while (client.connected()) {
-                if (client.available() >= 12) {
-                    int read_len = client.read(buffer, 12);
-                    if (read_len >= 12) {
+                // 1. Read first 6 bytes of standard Modbus TCP MBAP header (contains Transaction ID, Protocol ID, and Length)
+                if (client.available() >= 6) {
+                    int read_len = client.read(buffer, 6);
+                    if (read_len == 6) {
                         uint16_t transaction_id = (buffer[0] << 8) | buffer[1];
                         uint16_t protocol_id = (buffer[2] << 8) | buffer[3];
                         uint16_t length = (buffer[4] << 8) | buffer[5];
-                        uint8_t unit_id = buffer[6];
-                        uint8_t function_code = buffer[7];
                         
-                        if (protocol_id == 0 && length >= 6) {
-                            if (function_code == 3) { // Read Holding Registers
-                                uint16_t start_addr = (buffer[8] << 8) | buffer[9];
-                                uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
-                                
-                                if (reg_qty > 125) reg_qty = 125;
-                                
-                                uint8_t resp_len = 3 + 2 * reg_qty; // unit_id + fc + byte_count + data
-                                uint8_t resp[260];
-                                
-                                resp[0] = buffer[0];
-                                resp[1] = buffer[1];
-                                resp[2] = buffer[2];
-                                resp[3] = buffer[3];
-                                resp[4] = (resp_len >> 8) & 0xFF;
-                                resp[5] = resp_len & 0xFF;
-                                resp[6] = unit_id;
-                                
-                                resp[7] = 3;
-                                resp[8] = 2 * reg_qty;
-                                
-                                for (int i = 0; i < reg_qty; i++) {
-                                    uint16_t reg_val = modbus_get_register(start_addr + i);
-                                    resp[9 + 2 * i] = (reg_val >> 8) & 0xFF;
-                                    resp[10 + 2 * i] = reg_val & 0xFF;
+                        // 2. Protocol ID must be 0 (Modbus) and remaining payload length must be reasonable (Unit ID + PDU)
+                        if (protocol_id == 0 && length >= 2 && length <= 500) {
+                            int pdu_read = 0;
+                            uint32_t start_pdu_wait = millis();
+                            // Read exactly the 'length' bytes that belong to the rest of the message
+                            while (pdu_read < length && client.connected() && (millis() - start_pdu_wait < 1000)) {
+                                if (client.available() > 0) {
+                                    buffer[6 + pdu_read] = client.read();
+                                    pdu_read++;
+                                } else {
+                                    delay(1);
                                 }
-                                
-                                client.write(resp, 7 + resp_len);
                             }
-                            else if (function_code == 6) { // Write Single Register
-                                uint16_t reg_addr = (buffer[8] << 8) | buffer[9];
-                                uint16_t reg_val = (buffer[10] << 8) | buffer[11];
+                            
+                            if (pdu_read == length) {
+                                uint8_t unit_id = buffer[6];
+                                uint8_t function_code = buffer[7];
                                 
-                                modbus_set_register(reg_addr, reg_val);
-                                
-                                uint8_t resp_len = 6;
-                                uint8_t resp[12];
-                                resp[0] = buffer[0];
-                                resp[1] = buffer[1];
-                                resp[2] = buffer[2];
-                                resp[3] = buffer[3];
-                                resp[4] = 0;
-                                resp[5] = resp_len;
-                                resp[6] = unit_id;
-                                resp[7] = 6;
-                                resp[8] = buffer[8];
-                                resp[9] = buffer[9];
-                                resp[10] = buffer[10];
-                                resp[11] = buffer[11];
-                                
-                                client.write(resp, 12);
-                            }
-                            else if (function_code == 16) { // Write Multiple Registers
-                                uint16_t start_addr = (buffer[8] << 8) | buffer[9];
-                                uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
-                                uint8_t byte_count = buffer[12];
-                                
-                                int remaining = byte_count + 1;
-                                int read_extra = 0;
-                                while (read_extra < remaining && client.connected()) {
-                                    if (client.available() > 0) {
-                                        buffer[12 + read_extra] = client.read();
-                                        read_extra++;
-                                    } else {
-                                        delay(1);
+                                if (function_code == 3) { // Read Holding Registers
+                                    uint16_t start_addr = (buffer[8] << 8) | buffer[9];
+                                    uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
+                                    
+                                    if (reg_qty > 125) reg_qty = 125;
+                                    
+                                    uint8_t resp_len = 3 + 2 * reg_qty; // unit_id + fc + byte_count + data
+                                    uint8_t resp[270];
+                                    
+                                    resp[0] = (transaction_id >> 8) & 0xFF;
+                                    resp[1] = transaction_id & 0xFF;
+                                    resp[2] = 0;
+                                    resp[3] = 0;
+                                    resp[4] = (resp_len >> 8) & 0xFF;
+                                    resp[5] = resp_len & 0xFF;
+                                    resp[6] = unit_id;
+                                    resp[7] = 3;
+                                    resp[8] = 2 * reg_qty;
+                                    
+                                    for (int i = 0; i < reg_qty; i++) {
+                                        uint16_t reg_val = modbus_get_register(start_addr + i);
+                                        resp[9 + 2 * i] = (reg_val >> 8) & 0xFF;
+                                        resp[10 + 2 * i] = reg_val & 0xFF;
                                     }
+                                    
+                                    client.write(resp, 7 + resp_len);
                                 }
-                                
-                                if (read_extra == remaining) {
+                                else if (function_code == 6) { // Write Single Register
+                                    uint16_t reg_addr = (buffer[8] << 8) | buffer[9];
+                                    uint16_t reg_val = (buffer[10] << 8) | buffer[11];
+                                    
+                                    modbus_set_register(reg_addr, reg_val);
+                                    
+                                    uint8_t resp_len = 6;
+                                    uint8_t resp[12];
+                                    resp[0] = (transaction_id >> 8) & 0xFF;
+                                    resp[1] = transaction_id & 0xFF;
+                                    resp[2] = 0;
+                                    resp[3] = 0;
+                                    resp[4] = 0;
+                                    resp[5] = resp_len;
+                                    resp[6] = unit_id;
+                                    resp[7] = 6;
+                                    resp[8] = buffer[8];
+                                    resp[9] = buffer[9];
+                                    resp[10] = buffer[10];
+                                    resp[11] = buffer[11];
+                                    
+                                    client.write(resp, 12);
+                                }
+                                else if (function_code == 16) { // Write Multiple Registers
+                                    uint16_t start_addr = (buffer[8] << 8) | buffer[9];
+                                    uint16_t reg_qty = (buffer[10] << 8) | buffer[11];
+                                    
                                     for (int i = 0; i < reg_qty; i++) {
                                         uint16_t reg_val = (buffer[13 + 2 * i] << 8) | buffer[14 + 2 * i];
                                         modbus_set_register(start_addr + i, reg_val);
@@ -2310,10 +2354,10 @@ static void modbus_tcp_task(void* pvParameters) {
                                     
                                     uint8_t resp_len = 6;
                                     uint8_t resp[12];
-                                    resp[0] = buffer[0];
-                                    resp[1] = buffer[1];
-                                    resp[2] = buffer[2];
-                                    resp[3] = buffer[3];
+                                    resp[0] = (transaction_id >> 8) & 0xFF;
+                                    resp[1] = transaction_id & 0xFF;
+                                    resp[2] = 0;
+                                    resp[3] = 0;
                                     resp[4] = 0;
                                     resp[5] = resp_len;
                                     resp[6] = unit_id;
@@ -2349,6 +2393,7 @@ void writeholdingregister_modbus() {}
 
 void setup() {
     Serial.begin(115200);
+    modbus_init_mutex();
     
     #ifdef ESP_PLATFORM
     // Power on GSM Modem sequence
@@ -2426,11 +2471,16 @@ void loop() {
     readholdingregister_modbus();
     writeholdingregister_modbus();
     
-    // Poll Modbus command register 41 (REG_START_FIRMWARE_PROCESS)
+    // Poll Modbus command register 41 (REG_START_FIRMWARE_PROCESS) and register 1 (REG_FILE1_STATUS)
     uint16_t cmd = modbus_get_register(REG_START_FIRMWARE_PROCESS);
-    if (cmd != 0) {
+    uint16_t cmd_reg1 = modbus_get_register(REG_FILE1_STATUS);
+    if (cmd == 1 || cmd_reg1 == 1) {
+        handle_modbus_command(1);
+        modbus_set_register(REG_START_FIRMWARE_PROCESS, 0);
+        modbus_set_register(REG_FILE1_STATUS, 0);
+    } else if (cmd != 0) {
         handle_modbus_command(cmd);
-        modbus_set_register(REG_START_FIRMWARE_PROCESS, 0); // Clear command register after processing
+        modbus_set_register(REG_START_FIRMWARE_PROCESS, 0);
     }
     
     delay(2);
@@ -2714,11 +2764,12 @@ static DWORD WINAPI win_http_server_thread(LPVOID lpParam) {
                 
                 // Synchronize float registers for simulation
                 if (reg == REG_DOWNLOAD_STATUS) {
+                    float max_val = 2.0f + FW_UPDATE_NUM_PARTS * 2.0f;
                     if (val == STATUS_IDLE) setFloatValue(FW_DOWNLOAD_PROGRESS, 0.0f);
                     else if (val == STATUS_DOWNLOADING) setFloatValue(FW_DOWNLOAD_PROGRESS, 1.0f);
                     else if (val == STATUS_DECODING) setFloatValue(FW_DOWNLOAD_PROGRESS, 2.0f);
-                    else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, 3.0f);
-                    else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, 18.0f);
+                    else if (val == STATUS_FLASHING) setFloatValue(FW_DOWNLOAD_PROGRESS, max_val);
+                    else if (val == STATUS_COMPLETE) setFloatValue(FW_DOWNLOAD_PROGRESS, max_val + 8.0f);
                     else if (val == STATUS_ERROR) setFloatValue(FW_DOWNLOAD_PROGRESS, -1.0f);
                 } else if (reg == REG_ERROR_CODE) {
                     setFloatValue(ERROR4, (float)val);
@@ -2789,7 +2840,13 @@ int main(void) {
     // Simulate the loop poll
     while (true) {
         uint16_t cmd = modbus_get_register(REG_START_FIRMWARE_PROCESS);
-        if (cmd != 0) {
+        uint16_t cmd_reg1 = modbus_get_register(REG_FILE1_STATUS);
+        
+        if (cmd == 1 || cmd_reg1 == 1) {
+            handle_modbus_command(1);
+            modbus_set_register(REG_START_FIRMWARE_PROCESS, 0);
+            modbus_set_register(REG_FILE1_STATUS, 0);
+        } else if (cmd != 0) {
             handle_modbus_command(cmd);
             modbus_set_register(REG_START_FIRMWARE_PROCESS, 0);
         }

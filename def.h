@@ -36,9 +36,15 @@
 #define Base64_File4_Error 47
 #define Base64_File4_Completed 49
 
+// define error
+#define ErrorCount_1 51
+#define ErrorCount_2 53
+#define ErrorCount_3 55
+#define ErrorCount_4 57
+
 // PSRAM_Buffer_Intailsed_Value 
-#define PSRAM_Buffer_Size 2094
-#define PSRAM_Chunk_Size 20045
+#define PSRAM_Buffer_Size 59
+#define PSRAM_Chunk_Size 61
 
 #ifdef __cplusplus
 extern "C" {
